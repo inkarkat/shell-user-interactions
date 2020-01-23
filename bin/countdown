@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [--interval TIMESPAN[SUFFIX]] NUMBER[SUFFIX] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [--interval TIMESPAN[SUFFIX]] NUMBER[SUFFIX] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -30,6 +30,10 @@ HELPDESCRIPTION
     --as dot	    Append a period each interval.
     --as ephemereal Print (and overwrite) remaining wait times via ANSI escape
 		    sequences.
+    --clear|-c	    Clear TEXT and waiting indication after successful completion.
+    --clear-always|-C
+		    Clear TEXT and waiting indication also when the wait has
+		    been aborted by the user (via Ctrl-C).
     --interval TIMESPAN[SUFFIX]
 		    Wait TIMESPAN between updates instead of the one second
 		    default.
@@ -50,12 +54,16 @@ timeToSeconds()
 
 prefix='Waiting'
 render='ephemereal'
+isClear=
 interval=1
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--prefix)	shift; prefix="$1"; shift;;
+	--clear|-c)	shift; isClear=t;;
+	--clear-always|-C)
+			shift; isClear=t; trap 'clear 2>/dev/null' EXIT;;
 	--interval|-i)	shift; interval="$(timeToSeconds "$1")"; shift;;
 	--as)		shift; render="$1"; shift;;
 	--)		shift; break;;
@@ -87,9 +95,15 @@ secondsToDuration()
 # Force printing directly to terminal, even if stdout is redirected.
 { exec >/dev/tty; } 2>/dev/null || printf() { :; }
 
+[ "$isClear" ] && printf '[s'
+clear()
+{
+    printf '%s' "[u" "[0K"
+}
+
 case "$render" in
     dot)	    printf '%s' "$prefix";;
-    ephemereal)	    printf '%s%s' "[s" "${prefix}${prefix:+ }";;
+    ephemereal)	    printf '%s' "${prefix}${prefix:+ }";;
     *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printShortUsage "$0" >&2; exit 2;;
 esac
 
@@ -116,7 +130,8 @@ do
     sleep "$interval" || exit $?
 done
 
-case "$render" in
-    dot)	    ;;
-    ephemereal)	    printf '%s%s' "[u" "[0K";;
-esac
+if [ "$isClear" ]; then
+    clear
+else
+    printf '\n'
+fi
