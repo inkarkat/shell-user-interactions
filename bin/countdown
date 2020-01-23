@@ -1,0 +1,122 @@
+#!/bin/bash
+shopt -qs extglob
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [--interval TIMESPAN[SUFFIX]] NUMBER[SUFFIX] [-?|-h|--help]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Standin for sleep that prints updates to the terminal as it waits. Pauses for
+NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes,
+'h' for hours or 'd' for days.
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    cat <<HELPTEXT
+    --prefix TEXT   Print TEXT before the remaining wait time.
+    --as dot	    Append a period each interval.
+    --as ephemereal Print (and overwrite) remaining wait times via ANSI escape
+		    sequences.
+    --interval TIMESPAN[SUFFIX]
+		    Wait TIMESPAN between updates instead of the one second
+		    default.
+HELPTEXT
+}
+
+timeToSeconds()
+{
+    case "$1" in
+	+([0-9])?(s))   time="${1%s}";;
+	+([0-9])m)	time=$((${1%m} * 60));;
+	+([0-9])h)	time=$((${1%h} * 3600));;
+	+([0-9])d)	time=$((${1%d} * 86400));;
+	*)		printf >&2 'ERROR: Illegal timespan: %s\n' "$1"; exit 2;;
+    esac
+    printf %s "$time"
+}
+
+prefix='Waiting'
+render='ephemereal'
+interval=1
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--prefix)	shift; prefix="$1"; shift;;
+	--interval|-i)	shift; interval="$(timeToSeconds "$1")"; shift;;
+	--as)		shift; render="$1"; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -ne 1 ]; then
+    printShortUsage "$0" >&2
+    exit 2
+fi
+delay="$(timeToSeconds "$1")"
+
+
+secondsToDuration()
+{
+    local seconds="${1:?}"; shift
+    local hours=$((seconds / 3600))
+    local minutes=$((seconds / 60))
+    seconds=$((seconds - (60 * minutes)))
+
+    local renderedHours renderedMinutes renderedSeconds
+    [ $hours -gt 0 ] && renderedHours="${hours}:"
+    [ $minutes -gt 0 ] && printf -v renderedMinutes %02d: "$minutes"
+    [ $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="$seconds"
+    printf '%s%s%s' "$renderedHours" "$renderedMinutes" "$renderedSeconds"
+}
+
+# Force printing directly to terminal, even if stdout is redirected.
+{ exec >/dev/tty; } 2>/dev/null || printf() { :; }
+
+case "$render" in
+    dot)	    printf '%s' "$prefix";;
+    ephemereal)	    printf '%s%s' "[s" "${prefix}${prefix:+ }";;
+    *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printShortUsage "$0" >&2; exit 2;;
+esac
+
+previousDuration=
+SECONDS=0
+while [ $SECONDS -lt $delay ]
+do
+    case "$render" in
+	dot)	    printf '.';;
+	ephemereal) previousDuration="$duration"
+		    duration="$(secondsToDuration "$((delay - SECONDS))")"
+		    cleaner=
+		    durationDiffCnt=$((${#previousDuration} - ${#duration}))
+		    if [ $durationDiffCnt -gt 0 ]; then
+			cleaner="                    "
+			cleaner="${cleaner:0:$durationDiffCnt}"
+			cleaner="${cleaner}${cleaner//?/}"
+		    fi
+		    printf '%s%s%s' "${previousDuration//?/}" "$duration" "$cleaner"
+		    ;;
+
+    esac
+
+    sleep "$interval" || exit $?
+done
+
+case "$render" in
+    dot)	    ;;
+    ephemereal)	    printf '%s%s' "[u" "[0K";;
+esac
