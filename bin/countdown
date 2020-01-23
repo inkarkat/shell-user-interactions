@@ -91,6 +91,20 @@ secondsToDuration()
     [ $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="$seconds"
     printf '%s%s%s' "$renderedHours" "$renderedMinutes" "$renderedSeconds"
 }
+updateDuration()
+{
+    local previousDuration="$1"; shift
+    local duration="$1"; shift
+    local cleaner=
+
+    local durationDiffCnt=$((${#previousDuration} - ${#duration}))
+    if [ $durationDiffCnt -gt 0 ]; then
+	cleaner="                    "
+	cleaner="${cleaner:0:$durationDiffCnt}"
+	cleaner="${cleaner}${cleaner//?/}"
+    fi
+    printf '%s%s%s' "${previousDuration//?/}" "$duration" "$cleaner"
+}
 
 # Force printing directly to terminal, even if stdout is redirected.
 { exec >/dev/tty; } 2>/dev/null || printf() { :; }
@@ -101,13 +115,17 @@ clear()
     printf '%s' "[u" "[0K"
 }
 
+finalizer=
 case "$render" in
     dot)	    printf '%s' "$prefix";;
-    ephemereal)	    printf '%s' "${prefix}${prefix:+ }";;
+    ephemereal)	    printf '%s' "${prefix}${prefix:+ }"
+		    previousDuration=
+		    duration=
+		    finalizer='updateDuration "${prefix:+ }$duration" ""'
+		    ;;
     *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printShortUsage "$0" >&2; exit 2;;
 esac
 
-previousDuration=
 SECONDS=0
 while [ $SECONDS -lt $delay ]
 do
@@ -115,14 +133,7 @@ do
 	dot)	    printf '.';;
 	ephemereal) previousDuration="$duration"
 		    duration="$(secondsToDuration "$((delay - SECONDS))")"
-		    cleaner=
-		    durationDiffCnt=$((${#previousDuration} - ${#duration}))
-		    if [ $durationDiffCnt -gt 0 ]; then
-			cleaner="                    "
-			cleaner="${cleaner:0:$durationDiffCnt}"
-			cleaner="${cleaner}${cleaner//?/}"
-		    fi
-		    printf '%s%s%s' "${previousDuration//?/}" "$duration" "$cleaner"
+		    updateDuration "$previousDuration" "$duration"
 		    ;;
 
     esac
@@ -133,5 +144,6 @@ done
 if [ "$isClear" ]; then
     clear
 else
+    eval "$finalizer"
     printf '\n'
 fi
