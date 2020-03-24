@@ -1,0 +1,44 @@
+#!/bin/bash
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--id ID --initial|--finish [-m|--message MESSAGE] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--id ID --update [-c|--count] [-d|--duration] [-t|--timestamp] [-m|--message MESSAGE] [-c|--command COMMANDLINE] [[--] SIMPLECOMMAND] [-?|-h|--help]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Short textual description, either passive (Wrapper for blah) or first person (Writes foo into blah).
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    cat <<HELPTEXT
+# Note: long followed by short option, so that the user is able to scan through
+# the full names, then see the abbreviation.
+# Note: Order options logically as in the short helptext; sort alphabetically if
+# there are many options.
+    --foo|-f	Enables foo'ing with argument bar.
+# Note: Multiline alternative if both short and long option do not fit.
+    --id ID (e.g. use PARENT-COMMAND-NAME-\$\$)
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to ...
+    2	Bad invocation, wrong or missing command-line arguments.
+    3	Internal error or failed assertion.
+    4	Partial success ...
+
+Example:
+HELPTEXT
+    printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+}
