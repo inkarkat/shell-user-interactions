@@ -4,8 +4,9 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-C|--clear|-F|--finish [-m|--message MESSAGE] [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [--silent-command]] [[--] SIMPLECOMMAND] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [--silent-command]] [[--] SIMPLECOMMAND]'
 }
 printUsage()
 {
@@ -59,7 +60,7 @@ EXIT STATUS:
     1	Failed to write to the terminal.
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion. TODO
-    4	Partial success ... TODO
+    4	The passed ID does not exist.
     * any exit status from COMMANDS
 Example:
 HELPTEXT
@@ -129,8 +130,10 @@ elif [ ! "$id" ]; then
 elif [ "$action" != update ]; then
     if [ ${#commands[@]} -gt 0 ]; then
 	badArgumentError 'A COMMAND can only be passed to --update.'
-    elif [ "$updateMessage" ]; then
+    elif [ -n "$updateMessage" ]; then
 	badArgumentError '--update-message can only be used with --update.'
+    elif [ "$action" = clear -a -n "$message" ]; then
+	badArgumentError '--message cannot be used with --clear.'
     fi
 fi
 
@@ -141,7 +144,7 @@ database()
 updateDatabase()
 {
     isClearedZeroOrOne=${isCleared:-0}
-    database --update "${id:?}	$NOW	0	$message	$updateMessage	"${isCleared//t/1}""
+    database --update "${id:?}	$NOW	0	$message	$updateMessage	${isClearedZeroOrOne//t/1}"
 }
 readDatabase()
 {
@@ -170,7 +173,7 @@ initial()
 
 clear()
 {
-    :
+    readDatabase
 }
 
 finish()
