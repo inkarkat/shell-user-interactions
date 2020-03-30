@@ -4,8 +4,8 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '--id ID --initial|--finish [-m|--message MESSAGE] [-?|-h|--help]'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '--id ID --update [-c|--count] [-d|--duration] [-t|--timestamp] [-m|--message MESSAGE] [-c|--command COMMANDLINE] [[--] SIMPLECOMMAND] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-C|--clear|-F|--finish [-m|--message MESSAGE] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [--silent-command]] [[--] SIMPLECOMMAND] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -19,26 +19,122 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
-Short textual description, either passive (Wrapper for blah) or first person (Writes foo into blah).
+Prints a message directly to the terminal and updates it inline (using ANSI
+escape sequences) throughout multiple invocations by the same client.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
-# Note: long followed by short option, so that the user is able to scan through
-# the full names, then see the abbreviation.
-# Note: Order options logically as in the short helptext; sort alphabetically if
-# there are many options.
-    --foo|-f	Enables foo'ing with argument bar.
-# Note: Multiline alternative if both short and long option do not fit.
-    --id ID (e.g. use PARENT-COMMAND-NAME-\$\$)
+    --initial|-I    The very first call; records the start time (for duration
+		    measurements) and resets the count.
+    --update|-U	    All subsequent calls.
+    --clear|-C	    Clear a previous message (before executing a command outside
+		    of this).
+    --finish|-F	    The final call; clears a previous message / writes the final
+		    message and discards the duration and count records.
+    --id|-i ID	    In order to support multiple concurrent executions, the
+		    client has to be uniquely identified (e.g. pass
+		    PARENT-COMMAND-NAME-\$\$).
+    --message|-m MESSAGE
+		    Print / overwrite a previously printed message with MESSAGE.
+		    You can use the following symbols, which will be replaced
+		    with the current values:
+			%COUNT%	    : Number of duration update
+			%DURATION%  : Time elapsed (MM:SS) since the start.
+			%TIMESTAMP% : Date and time of this update.
+    --update-message|-M U-MESSAGE
+		    Append U-MESSAGE to the previously printed MESSAGE on this
+		    update. (Any previously given U-MESSAGE will be overwritten,
+		    but MESSAGE will be kept.)
+    --command|-c CMD	Execute the passed command line. When this is a simple
+			command, it can also be passed as such. Clears any
+			message and restores it afterwards, so that command
+			output does not interfere with the messages.
+    --silent-command	Disables the clearing and restoring around command
+			execution, as an optimization. You need to ensure that
+			the command does not do any output, or accept the
+			consequence of left-behind messages.
 EXIT STATUS:
     0	Complete success.
-    1	Failed to ...
+    1	Failed to ... TODO
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion.
     4	Partial success ...
-
+    * any exit status from COMMANDS
 Example:
 HELPTEXT
-    printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+    printf '%q %s\n' "$(basename "$1")" '-i foo-$$ --initial -m "Frobnizing"'
+    printf '%q %s\n' "$(basename "$1")" '-i foo-$$ --update -M " (%COUNT%, for %DURATION%)"'
+    printf '%q %s\n' "$(basename "$1")" '-i foo-$$ --update ...'
+    printf '%q %s\n' "$(basename "$1")" '-i foo-$$ --finish'
 }
+ACTIONS='--initial|--clear|--finish|--update'
+multipleActionsError()
+{
+    echo >&2 "ERROR: Only one of $ACTIONS allowed."
+    echo >&2
+    printShortUsage "$1" >&2
+    exit 2
+}
+
+action=
+id=
+isNeedEval=
+message=
+updateMessage=
+typeset -a commands=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--id|-i)	shift; id="$1"; shift;;
+	--initial|-I)	shift; [ "$action" ] && multipleActionsError "$0"; action=initial;;
+	--clear|-C)	shift; [ "$action" ] && multipleActionsError "$0"; action=clear;;
+	--finish|-F)	shift; [ "$action" ] && multipleActionsError "$0"; action=finish;;
+	--update|-U)	shift; [ "$action" ] && multipleActionsError "$0"; action=update;;
+	--message|-m)	shift; message="$1"; shift;;
+	--update-message|-M)
+			shift; updateMessage="$1"; shift;;
+	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -ne 0 ]; then
+    if [ "$isNeedEval" ]; then
+	# Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+	# undo the effects of eval.
+	commands+=(${commands:+;} $(printf '%q ' "$@"))
+    else
+	commands=("$@")
+    fi
+fi
+if [ ! "$action" ]; then
+    echo >&2 "ERROR: No action passed: $ACTIONS"
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+fi
+if [ ! "$id" ]; then
+    echo >&2 'ERROR: No ID passed.'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+fi
+if [ "$action" != update -a ${#commands[@]} -gt 0 ]; then
+    echo >&2 'ERROR: A COMMAND can only be passed to --update.'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+fi
+
+if [ ${#commands[@]} -eq 0 ]; then
+    :
+else
+    if [ "$isNeedEval" ]; then
+	eval "${commands[@]}"
+    else
+	"${commands[@]}"
+    fi
+fi
