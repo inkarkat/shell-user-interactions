@@ -56,10 +56,10 @@ HELPDESCRIPTION
 			consequence of left-behind messages.
 EXIT STATUS:
     0	Complete success.
-    1	Failed to ... TODO
+    1	Failed to write to the terminal.
     2	Bad invocation, wrong or missing command-line arguments.
-    3	Internal error or failed assertion.
-    4	Partial success ...
+    3	Internal error or failed assertion. TODO
+    4	Partial success ... TODO
     * any exit status from COMMANDS
 Example:
 HELPTEXT
@@ -84,12 +84,15 @@ badArgumentError()
     exit 2
 }
 
+: ${NOW:=$(date +%s)}
 action=
 id=
 isNeedEval=
 message=
 updateMessage=
+isCleared=
 typeset -a commands=()
+isSilentCommand=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -99,10 +102,12 @@ do
 	--clear|-C)	shift; [ "$action" ] && multipleActionsError "$0"; action=clear;;
 	--finish|-F)	shift; [ "$action" ] && multipleActionsError "$0"; action=finish;;
 	--update|-U)	shift; [ "$action" ] && multipleActionsError "$0"; action=update;;
-	--message|-m)	shift; message="$1"; shift;;
+	--message|-m)	shift; message="${1//[$'\n\t']/ }"; shift;;
 	--update-message|-M)
-			shift; updateMessage="$1"; shift;;
+			shift; updateMessage="${1//[$'\n\t']/ }"; shift;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--silent-command)
+			shift; isSilentCommand=t;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -121,16 +126,69 @@ if [ ! "$action" ]; then
     badArgumentError "No action passed: $ACTIONS"
 elif [ ! "$id" ]; then
     badArgumentError 'No ID passed.'
-elif [ "$action" != update -a ${#commands[@]} -gt 0 ]; then
-    badArgumentError 'A COMMAND can only be passed to --update.'
-fi
-
-if [ ${#commands[@]} -eq 0 ]; then
-    :
-else
-    if [ "$isNeedEval" ]; then
-	eval "${commands[@]}"
-    else
-	"${commands[@]}"
+elif [ "$action" != update ]; then
+    if [ ${#commands[@]} -gt 0 ]; then
+	badArgumentError 'A COMMAND can only be passed to --update.'
+    elif [ "$updateMessage" ]; then
+	badArgumentError '--update-message can only be used with --update.'
     fi
 fi
+
+database()
+{
+    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT MESSAGE UPDATE_MESSAGE IS_CLEARED' "$@"
+}
+updateDatabase()
+{
+    isClearedZeroOrOne=${isCleared:-0}
+    database --update "${id:?}	$NOW	0	$message	$updateMessage	"${isCleared//t/1}""
+}
+readDatabase()
+{
+    database --query "${id:?}" --columns \*
+}
+deleteDatabase()
+{
+    database --delete "${id:?}"
+}
+
+printfToTerminal()
+{
+    # Print directly to terminal, even if stdout is redirected, ignoring a
+    # non-existing terminal.
+    { printf "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+}
+
+initial()
+{
+    updateDatabase
+
+    if [ "$message" ]; then
+	printfToTerminal '%s' "$message"
+    fi
+}
+
+clear()
+{
+    :
+}
+
+finish()
+{
+    :
+}
+
+update()
+{
+    if [ ${#commands[@]} -eq 0 ]; then
+	:
+    else
+	if [ "$isNeedEval" ]; then
+	    eval "${commands[@]}"
+	else
+	    "${commands[@]}"
+	fi
+    fi
+}
+
+"$action"
