@@ -76,6 +76,13 @@ multipleActionsError()
     printShortUsage "$1" >&2
     exit 2
 }
+badArgumentError()
+{
+    echo >&2 "ERROR: ${1:?}"
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+}
 
 action=
 id=
@@ -111,22 +118,11 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ ! "$action" ]; then
-    echo >&2 "ERROR: No action passed: $ACTIONS"
-    echo >&2
-    printShortUsage "$0" >&2
-    exit 2
-fi
-if [ ! "$id" ]; then
-    echo >&2 'ERROR: No ID passed.'
-    echo >&2
-    printShortUsage "$0" >&2
-    exit 2
-fi
-if [ "$action" != update -a ${#commands[@]} -gt 0 ]; then
-    echo >&2 'ERROR: A COMMAND can only be passed to --update.'
-    echo >&2
-    printShortUsage "$0" >&2
-    exit 2
+    badArgumentError "No action passed: $ACTIONS"
+elif [ ! "$id" ]; then
+    badArgumentError 'No ID passed.'
+elif [ "$action" != update -a ${#commands[@]} -gt 0 ]; then
+    badArgumentError 'A COMMAND can only be passed to --update.'
 fi
 
 if [ ${#commands[@]} -eq 0 ]; then
