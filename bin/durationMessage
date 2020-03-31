@@ -139,7 +139,7 @@ fi
 
 database()
 {
-    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT MESSAGE UPDATE_MESSAGE IS_CLEARED' "$@"
+    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT GIVEN_MESSAGE PRINTED_MESSAGE GIVEN_UPDATE_MESSAGE PRINTED_UPDATE_MESSAGE IS_CLEARED' "$@"
 }
 updateDatabase()
 {
@@ -148,7 +148,12 @@ updateDatabase()
 }
 readDatabase()
 {
-    database --query "${id:?}" --columns \*
+    if ! < <(database --query "${id:?}" --columns \*) IFS=$'\t' \
+	read -r startEpoch updateCount givenMessage printedMessage givenUpdateMessage printedUpdateMessage isClearedZeroOrOne
+    then
+	printf >&2 'ERROR: ID "%s" not found.\n' "$id"
+	exit 4
+    fi
 }
 deleteDatabase()
 {
