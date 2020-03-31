@@ -179,7 +179,7 @@ initial()
     printedUpdateMessage=""
     isCleared=
 
-    status=0
+    local status=0
     if [ "$message" ]; then
 	if ! printfToTerminal '%s' "$message"; then
 	    status=1
@@ -194,6 +194,20 @@ initial()
 clear()
 {
     readDatabase
+
+    local status=0
+    local printedMessages="${printedMessage}${printedUpdateMessage}"
+    if [ "$printedMessages" ]; then
+	if printfToTerminal '%s' "${printedMessages//?/}"; then
+	    printedMessage=
+	    printedUpdateMessage=
+
+	    updateDatabase
+	else
+	    status=1
+	fi
+    fi
+    return $status
 }
 
 finish()
