@@ -144,7 +144,7 @@ database()
 updateDatabase()
 {
     isClearedZeroOrOne=${isCleared:-0}
-    database --update "${id:?}	$NOW	0	$message	$updateMessage	${isClearedZeroOrOne//t/1}"
+    database --update "${id:?}	$startEpoch	$updateCount	$givenMessage	$printedMessage	$givenUpdateMessage	$printedUpdateMessage	${isClearedZeroOrOne//t/1}"
 }
 readDatabase()
 {
@@ -154,6 +154,8 @@ readDatabase()
 	printf >&2 'ERROR: ID "%s" not found.\n' "$id"
 	exit 4
     fi
+
+    isCleared=; [ "${isClearedZeroOrOne:-0}" = 0 ] || isCleared=t
 }
 deleteDatabase()
 {
@@ -169,11 +171,24 @@ printfToTerminal()
 
 initial()
 {
-    updateDatabase
+    startEpoch=$NOW
+    updateCount=0
+    givenMessage="$message"
+    printedMessage="$message" # TODO
+    givenUpdateMessage="$updateMessage"
+    printedUpdateMessage=""
+    isCleared=
 
+    status=0
     if [ "$message" ]; then
-	printfToTerminal '%s' "$message"
+	if ! printfToTerminal '%s' "$message"; then
+	    status=1
+	    printedMessage=
+	fi
     fi
+
+    updateDatabase
+    return $status
 }
 
 clear()
