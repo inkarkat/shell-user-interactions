@@ -226,6 +226,7 @@ clear()
 finish()
 {
     readDatabase
+    let UPDATE_COUNT+=1
 
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
@@ -237,7 +238,8 @@ finish()
 	    status=1
 	    GIVEN_MESSAGE="$message"
 	    GIVEN_UPDATE_MESSAGE=""
-	    let UPDATE_COUNT+=1
+
+	    updateDatabase || status=$?
 	fi
     else
 	deleteDatabase; status=$?
