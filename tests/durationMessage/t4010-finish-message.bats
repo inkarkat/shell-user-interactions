@@ -7,7 +7,7 @@ load fixture
 
     run durationMessage --id ID --finish
     [ $status -eq 0 ]
-    [ "$output" = '' ]
+    [ "$output" = "${CLR}" ]
 }
 
 @test "finishing a known ID replaces a previous message with the passed one" {
@@ -15,7 +15,7 @@ load fixture
 
     run durationMessage --id ID --finish --message 'we are done here now'
     [ $status -eq 0 ]
-    [ "$output" = 'we are done here now' ]
+    [ "$output" = "${CLR}we are done here now" ]
 }
 
 @test "finishing with unavailable sink returns 1, next finishing will output" {
@@ -25,5 +25,14 @@ load fixture
 
     run durationMessage --id ID --finish
     [ $status -eq 0 ]
-    [ "$output" = '' ]
+    [ "$output" = "${CLR}" ]
+}
+@test "finishing with unavailable sink returns 1, next finishing will replace message" {
+    durationMessage --id ID --initial --message 'testing it'
+    DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --finish --message 'we are not done yet'
+    [ $status -eq 1 ]
+
+    run durationMessage --id ID --finish --message 'we are done on second try'
+    [ $status -eq 0 ]
+    [ "$output" = "${CLR}we are done on second try" ]
 }
