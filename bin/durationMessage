@@ -188,7 +188,7 @@ initial()
     UPDATE_COUNT=0
     GIVEN_MESSAGE="$message"
     PRINTED_MESSAGE="$(expandSymbols "$message")"
-    GIVEN_UPDATE_MESSAGE="$updateMessage"
+    GIVEN_UPDATE_MESSAGE=""
     PRINTED_UPDATE_MESSAGE=""
     IS_CLEARED=
 
