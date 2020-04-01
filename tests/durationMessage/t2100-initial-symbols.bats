@@ -19,3 +19,9 @@ load fixture
     [ $status -eq 0 ]
     [ "$output" = "01-Apr-2020 11:06:40-testing it" ]
 }
+
+@test "various and duplicate symbols are expanded in initial message" {
+    run durationMessage --id ID --initial --message '%COUNT%:%TIMESTAMP%:%DURATION%: testing it since %TIMESTAMP% for %DURATION% (%COUNT%/%COUNT%)'
+    [ $status -eq 0 ]
+    [ "$output" = "0:01-Apr-2020 11:06:40:00:00: testing it since 01-Apr-2020 11:06:40 for 00:00 (0/0)" ]
+}

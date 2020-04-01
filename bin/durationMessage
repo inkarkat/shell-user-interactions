@@ -172,7 +172,7 @@ printfToTerminal()
 expandSymbols()
 {
     local message="$1"; shift
-    message="${message/\%COUNT%/${UPDATE_COUNT}}"
+    message="${message//\%COUNT%/${UPDATE_COUNT}}"
     if [ "${message/\%DURATION%/}" != "$message" ]; then
 	message="${message//%DURATION%/$(secondsToDuration -- "$((NOW - START_EPOCH))")}"
     fi
