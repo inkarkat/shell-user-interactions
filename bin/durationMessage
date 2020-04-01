@@ -86,6 +86,7 @@ badArgumentError()
 }
 
 : ${NOW:=$(date +%s)}
+: ${DURATION_MESSAGE_TIMESTAMP:=%d-%b-%Y %T}
 action=
 id=
 isNeedEval=
@@ -168,19 +169,32 @@ printfToTerminal()
     { printf "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
+expandSymbols()
+{
+    local message="$1"; shift
+    message="${message/\%COUNT%/${UPDATE_COUNT}}"
+    if [ "${message/\%DURATION%/}" != "$message" ]; then
+	message="${message//%DURATION%/$(secondsToDuration -- "$((NOW - START_EPOCH))")}"
+    fi
+    if [ "${message/\%TIMESTAMP%/}" != "$message" ]; then
+	message="${message//%TIMESTAMP%/$(date -d "@$NOW" "+$DURATION_MESSAGE_TIMESTAMP")}"
+    fi
+    printf %s "$message"
+}
+
 initial()
 {
     START_EPOCH=$NOW
     UPDATE_COUNT=0
     GIVEN_MESSAGE="$message"
-    PRINTED_MESSAGE="$message" # TODO
+    PRINTED_MESSAGE="$(expandSymbols "$message")"
     GIVEN_UPDATE_MESSAGE="$updateMessage"
     PRINTED_UPDATE_MESSAGE=""
     IS_CLEARED=
 
     local status=0
     if [ "$message" ]; then
-	if ! printfToTerminal '%s' "$message"; then
+	if ! printfToTerminal '%s' "$PRINTED_MESSAGE"; then
 	    status=1
 	    PRINTED_MESSAGE=
 	fi
