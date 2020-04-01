@@ -61,6 +61,7 @@ EXIT STATUS:
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion. TODO
     4	The passed ID does not exist.
+    5	Database access failed.
     * any exit status from COMMANDS
 Example:
 HELPTEXT
@@ -197,7 +198,7 @@ initial()
 	fi
     fi
 
-    updateDatabase || status=$?
+    updateDatabase || status=5
     return $status
 }
 
@@ -212,7 +213,7 @@ clear()
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
-	    updateDatabase || status=$?
+	    updateDatabase || status=5
 	else
 	    status=1
 	fi
@@ -230,16 +231,16 @@ finish()
     local finishMessage="${printedMessages//?/}${printedMessages:+[0K}$(expandSymbols "$message")${message:+$'\n'}"
     if [ "$finishMessage" ]; then
 	if printfToTerminal '%s' "$finishMessage"; then
-	    deleteDatabase || status=$?
+	    deleteDatabase || status=5
 	else
 	    status=1
 	    GIVEN_MESSAGE="$message"
 	    GIVEN_UPDATE_MESSAGE=""
 
-	    updateDatabase || status=$?
+	    updateDatabase || status=5
 	fi
     else
-	deleteDatabase || status=$?
+	deleteDatabase || status=5
     fi
     return $status
 }
@@ -271,7 +272,7 @@ update()
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
 	fi
     fi
-    updateDatabase || status=$?
+    updateDatabase || status=5
     return $status
 
     if [ ${#commands[@]} -eq 0 ]; then
