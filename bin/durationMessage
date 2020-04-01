@@ -227,7 +227,22 @@ finish()
 {
     readDatabase
 
-    deleteDatabase
+    local status=0
+    local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    local finishMessage="${printedMessages//?/}${message}"
+    if [ "$finishMessage" ]; then
+	if printfToTerminal '%s' "$finishMessage"; then
+	    deleteDatabase; status=$?
+	else
+	    status=1
+	    GIVEN_MESSAGE="$message"
+	    GIVEN_UPDATE_MESSAGE=""
+	    let UPDATE_COUNT+=1
+	fi
+    else
+	deleteDatabase; status=$?
+    fi
+    return $status
 }
 
 update()

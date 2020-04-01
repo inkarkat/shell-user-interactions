@@ -24,3 +24,11 @@ load fixture
     [ $status -eq 4 ]
     [ "$output" = 'ERROR: ID "ID" not found.' ]
 }
+
+@test "finishing a known ID with a message that persists" {
+    durationMessage --id ID --initial
+
+    run durationMessage --id ID --finish --message "it's done"
+    [ $status -eq 0 ]
+    [ "$output" = "it's done" ]
+}
