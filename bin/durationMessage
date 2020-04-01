@@ -229,7 +229,7 @@ finish()
 
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-    local finishMessage="${printedMessages//?/}${printedMessages:+[0K}${message}${message:+$'\n'}"
+    local finishMessage="${printedMessages//?/}${printedMessages:+[0K}$(expandSymbols "$message")${message:+$'\n'}"
     if [ "$finishMessage" ]; then
 	if printfToTerminal '%s' "$finishMessage"; then
 	    deleteDatabase; status=$?
