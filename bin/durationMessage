@@ -139,12 +139,11 @@ fi
 
 database()
 {
-    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT GIVEN_MESSAGE PRINTED_MESSAGE GIVEN_UPDATE_MESSAGE PRINTED_UPDATE_MESSAGE CLEARED_YES_NO' "$@"
+    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT GIVEN_MESSAGE PRINTED_MESSAGE GIVEN_UPDATE_MESSAGE PRINTED_UPDATE_MESSAGE' "$@"
 }
 updateDatabase()
 {
-    isClearedZeroOrOne=${IS_CLEARED:-0}
-    database --update "${id:?}	$START_EPOCH	$UPDATE_COUNT	$GIVEN_MESSAGE	$PRINTED_MESSAGE	$GIVEN_UPDATE_MESSAGE	$PRINTED_UPDATE_MESSAGE	${isClearedZeroOrOne//t/1}"
+    database --update "${id:?}	$START_EPOCH	$UPDATE_COUNT	$GIVEN_MESSAGE	$PRINTED_MESSAGE	$GIVEN_UPDATE_MESSAGE	$PRINTED_UPDATE_MESSAGE"
 }
 readDatabase()
 {
@@ -155,7 +154,6 @@ readDatabase()
     fi
 
     eval "$query"
-    IS_CLEARED=; [ "${CLEARED_YES_NO:-0}" = 0 ] || IS_CLEARED=t
 }
 deleteDatabase()
 {
@@ -190,7 +188,6 @@ initial()
     PRINTED_MESSAGE="$(expandSymbols "$message")"
     GIVEN_UPDATE_MESSAGE="$updateMessage"
     PRINTED_UPDATE_MESSAGE=""
-    IS_CLEARED=
 
     local status=0
     if [ "$message" ]; then
@@ -268,9 +265,7 @@ update()
 	updateMessage="${printedUpdateMessage//?/}${printedUpdateMessage:+[0K}${PRINTED_UPDATE_MESSAGE}"
     fi
     if [ "$updateMessage" ]; then
-	if printfToTerminal '%s' "$updateMessage"; then
-	    IS_CLEARED=
-	else
+	if ! printfToTerminal '%s' "$updateMessage"; then
 	    status=1
 	    PRINTED_MESSAGE="$printedMessage"
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
