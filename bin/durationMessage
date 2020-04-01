@@ -148,13 +148,13 @@ updateDatabase()
 }
 readDatabase()
 {
-    local query
-    if ! query="$(database --query "${id:?}" --columns \* --as-shell-variables)"; then
+    local queryResult
+    if ! queryResult="$(database --query "${id:?}" --columns \* --as-shell-variables)"; then
 	printf >&2 'ERROR: ID "%s" not found.\n' "$id"
 	exit 4
     fi
 
-    eval "$query"
+    eval "$queryResult"
 }
 deleteDatabase()
 {
