@@ -50,5 +50,5 @@ load fixture
 
     run durationMessage --id ID --update --update-message 'we are testing with %COUNT%. try'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}we are testing with 3. try" ]
+    [ "$output" = "we are testing with 3. try" ]
 }

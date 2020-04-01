@@ -22,5 +22,5 @@ load fixture
 
     run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}testing it, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = "${CLR}, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
 }

@@ -251,7 +251,8 @@ update()
 {
     readDatabase
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-    local printedUpdateMessage="${PRINTED_UPDATE_MESSAGE}"
+    local printedMessage="$PRINTED_MESSAGE"
+    local printedUpdateMessage="$PRINTED_UPDATE_MESSAGE"
 
     let UPDATE_COUNT+=1
     [ -n "${message+t}" ] && GIVEN_MESSAGE="$message"
@@ -261,7 +262,7 @@ update()
 
     local status=0
     local updateMessage
-    if [ "$PRINTED_MESSAGE" ]; then
+    if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
 	updateMessage="${printedMessages//?/}${printedMessages:+[0K}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     else
 	updateMessage="${printedUpdateMessage//?/}${printedUpdateMessage:+[0K}${PRINTED_UPDATE_MESSAGE}"
@@ -271,6 +272,8 @@ update()
 	    IS_CLEARED=
 	else
 	    status=1
+	    PRINTED_MESSAGE="$printedMessage"
+	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
 	fi
     fi
     updateDatabase || status=$?
