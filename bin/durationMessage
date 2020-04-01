@@ -225,7 +225,9 @@ clear()
 
 finish()
 {
-    :
+    readDatabase
+
+    deleteDatabase
 }
 
 update()
