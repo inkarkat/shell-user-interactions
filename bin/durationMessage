@@ -90,8 +90,8 @@ badArgumentError()
 action=
 id=
 isNeedEval=
-message=
-updateMessage=
+unset message
+unset updateMessage
 typeset -a commands=()
 isSilentCommand=
 while [ $# -ne 0 ]
@@ -242,13 +242,40 @@ finish()
 	    updateDatabase || status=$?
 	fi
     else
-	deleteDatabase; status=$?
+	deleteDatabase || status=$?
     fi
     return $status
 }
 
 update()
 {
+    readDatabase
+    local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    local printedUpdateMessage="${PRINTED_UPDATE_MESSAGE}"
+
+    let UPDATE_COUNT+=1
+    [ -n "${message+t}" ] && GIVEN_MESSAGE="$message"
+    PRINTED_MESSAGE="$(expandSymbols "$GIVEN_MESSAGE")"
+    [ -n "${updateMessage+t}" ] && GIVEN_UPDATE_MESSAGE="$updateMessage"
+    PRINTED_UPDATE_MESSAGE="$(expandSymbols "$GIVEN_UPDATE_MESSAGE")"
+
+    local status=0
+    local updateMessage
+    if [ "$PRINTED_MESSAGE" ]; then
+	updateMessage="${printedMessages//?/}${printedMessages:+[0K}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    else
+	updateMessage="${printedUpdateMessage//?/}${printedUpdateMessage:+[0K}${PRINTED_UPDATE_MESSAGE}"
+    fi
+    if [ "$updateMessage" ]; then
+	if printfToTerminal '%s' "$updateMessage"; then
+	    IS_CLEARED=
+	else
+	    status=1
+	fi
+    fi
+    updateDatabase || status=$?
+    return $status
+
     if [ ${#commands[@]} -eq 0 ]; then
 	:
     else
