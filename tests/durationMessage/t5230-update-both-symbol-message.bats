@@ -16,11 +16,11 @@ load fixture
 
     run durationMessage --id ID --update --update-message ', testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}01-Apr-2020 11:08:42 starting it, testing 1 for 02:02" ]
+    [ "$output" = "01-Apr-2020 11:08:42 starting it, testing 1 for 02:02${CLR}" ]
 
     let NOW+=1
 
     run durationMessage --id ID --update --update-message ', testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}01-Apr-2020 11:08:43 starting it, testing 2 for 02:03" ]
+    [ "$output" = "01-Apr-2020 11:08:43 starting it, testing 2 for 02:03${CLR}" ]
 }

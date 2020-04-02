@@ -7,7 +7,7 @@ load fixture
 
     run durationMessage --id ID --message 'testing it' --update
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}testing it, 01-Apr-2020 11:06:40: testing 1 for 00:00" ]
+    [ "$output" = "testing it, 01-Apr-2020 11:06:40: testing 1 for 00:00${CLR}" ]
 }
 
 @test "updating with both message and update message passed to initial after some time updates the message and appends the update message" {
@@ -16,13 +16,13 @@ load fixture
 
     run durationMessage --id ID --update --message 'testing it'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}testing it, 01-Apr-2020 11:08:42: testing 1 for 02:02" ]
+    [ "$output" = "testing it, 01-Apr-2020 11:08:42: testing 1 for 02:02${CLR}" ]
 
     let NOW+=1
 
     run durationMessage --id ID --update
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = ", 01-Apr-2020 11:08:43: testing 2 for 02:03${CLR}" ]
 }
 
 @test "an previous update message is recalled on subsequent updates" {
@@ -37,7 +37,7 @@ load fixture
 
     run durationMessage --id ID --update
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = ", 01-Apr-2020 11:08:43: testing 2 for 02:03${CLR}" ]
 }
 
 @test "an previous update message can be cleared by passing an empty argument" {

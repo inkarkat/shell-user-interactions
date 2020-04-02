@@ -19,11 +19,11 @@ load fixture
 
     run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, 01-Apr-2020 11:06:40: testing 2 for 00:00" ]
+    [ "$output" = ", 01-Apr-2020 11:06:40: testing 2 for 00:00${CLR}" ]
 
     run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, 01-Apr-2020 11:06:40: testing 3 for 00:00" ]
+    [ "$output" = ", 01-Apr-2020 11:06:40: testing 3 for 00:00${CLR}" ]
 }
 
 @test "updating with an update message containing symbols after some time increments times and counts" {
@@ -38,5 +38,5 @@ load fixture
 
     run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = ", 01-Apr-2020 11:08:43: testing 2 for 02:03${CLR}" ]
 }

@@ -12,5 +12,5 @@ durationMessageWrapper()
 
 @test "updating symbols in message after existing text in a line keeps that text" {
     run durationMessageWrapper
-    [ "$output" = "a prefix:01-Apr-2020 11:06:40 now (0)${CLR}01-Apr-2020 11:06:50 now (1)" ]
+    [ "$output" = "a prefix:01-Apr-2020 11:06:40 now (0)01-Apr-2020 11:06:50 now (1)${CLR}" ]
 }

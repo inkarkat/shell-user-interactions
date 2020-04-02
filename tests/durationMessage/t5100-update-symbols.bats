@@ -19,11 +19,11 @@ load fixture
 
     run durationMessage --id ID --update --message '%TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}01-Apr-2020 11:06:40: testing 2 for 00:00" ]
+    [ "$output" = "01-Apr-2020 11:06:40: testing 2 for 00:00${CLR}" ]
 
     run durationMessage --id ID --update --message '%TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}01-Apr-2020 11:06:40: testing 3 for 00:00" ]
+    [ "$output" = "01-Apr-2020 11:06:40: testing 3 for 00:00${CLR}" ]
 }
 
 @test "updating a known ID with a message containing symbols after some time increments times and counts" {
@@ -38,7 +38,7 @@ load fixture
 
     run durationMessage --id ID --update --message '%TIMESTAMP%: testing %COUNT% for %DURATION%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = "01-Apr-2020 11:08:43: testing 2 for 02:03${CLR}" ]
 }
 
 @test "updating with unavailable sink returns 1 two times, third updating will replace message and update count" {
@@ -50,5 +50,5 @@ load fixture
 
     run durationMessage --id ID --update --message 'we are testing with %COUNT%. try'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}we are testing with 3. try" ]
+    [ "$output" = "we are testing with 3. try${CLR}" ]
 }

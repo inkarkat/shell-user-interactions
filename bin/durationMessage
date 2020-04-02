@@ -263,9 +263,9 @@ update()
     local status=0
     local updateMessage
     if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
-	updateMessage="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+	updateMessage="${printedMessages//?/${ERASE}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}${printedMessages:+${ERASE_LINE_TO_END}}"
     else
-	updateMessage="${printedUpdateMessage//?/${ERASE}}${printedUpdateMessage:+${ERASE_LINE_TO_END}}${PRINTED_UPDATE_MESSAGE}"
+	updateMessage="${printedUpdateMessage//?/${ERASE}}${PRINTED_UPDATE_MESSAGE}${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
     fi
     if [ "$updateMessage" ]; then
 	if ! printfToTerminal '%s' "$updateMessage"; then

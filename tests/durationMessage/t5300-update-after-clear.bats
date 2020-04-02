@@ -40,5 +40,5 @@ load fixture
 
     run durationMessage --id ID --update --update-message ', try %COUNT%'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}, try 2" ]
+    [ "$output" = ", try 2${CLR}" ]
 }
