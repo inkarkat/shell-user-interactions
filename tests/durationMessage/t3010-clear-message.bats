@@ -7,7 +7,7 @@ load fixture
 
     run durationMessage --id ID --clear
     [ $status -eq 0 ]
-    [ "$output" = '' ]
+    [ "$output" = "${CLR}" ]
 }
 
 @test "clearing again does not output anything" {
@@ -26,5 +26,5 @@ load fixture
 
     run durationMessage --id ID --clear
     [ $status -eq 0 ]
-    [ "$output" = '' ]
+    [ "$output" = "${CLR}" ]
 }

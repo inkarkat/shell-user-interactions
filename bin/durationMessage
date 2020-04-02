@@ -211,7 +211,7 @@ clear()
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     if [ "$printedMessages" ]; then
-	if printfToTerminal '%s' "${printedMessages//?/${ERASE}}"; then
+	if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
