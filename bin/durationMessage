@@ -86,6 +86,7 @@ badArgumentError()
     exit 2
 }
 
+: ${ERASE_LINE_TO_END=[0K}
 : ${NOW:=$(date +%s)}
 : ${DURATION_MESSAGE_TIMESTAMP:=%d-%b-%Y %T}
 action=
@@ -228,7 +229,7 @@ finish()
 
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-    local finishMessage="${printedMessages//?/}${printedMessages:+[0K}$(expandSymbols "$message")${message:+$'\n'}"
+    local finishMessage="${printedMessages//?/}${printedMessages:+${ERASE_LINE_TO_END}}$(expandSymbols "$message")${message:+$'\n'}"
     if [ "$finishMessage" ]; then
 	if printfToTerminal '%s' "$finishMessage"; then
 	    deleteDatabase || status=5
@@ -261,9 +262,9 @@ update()
     local status=0
     local updateMessage
     if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
-	updateMessage="${printedMessages//?/}${printedMessages:+[0K}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+	updateMessage="${printedMessages//?/}${printedMessages:+${ERASE_LINE_TO_END}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     else
-	updateMessage="${printedUpdateMessage//?/}${printedUpdateMessage:+[0K}${PRINTED_UPDATE_MESSAGE}"
+	updateMessage="${printedUpdateMessage//?/}${printedUpdateMessage:+${ERASE_LINE_TO_END}}${PRINTED_UPDATE_MESSAGE}"
     fi
     if [ "$updateMessage" ]; then
 	if ! printfToTerminal '%s' "$updateMessage"; then
