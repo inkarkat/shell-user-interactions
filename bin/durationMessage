@@ -249,10 +249,37 @@ finish()
 
 update()
 {
+    local status=0
+
     readDatabase
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     local printedMessage="$PRINTED_MESSAGE"
     local printedUpdateMessage="$PRINTED_UPDATE_MESSAGE"
+
+
+    if [ ${#commands[@]} -gt 0 ]; then
+	if [ ! "$isSilentCommand" ]; then
+	    if [ "$printedMessages" ]; then
+		if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+		    PRINTED_MESSAGE=
+		    PRINTED_UPDATE_MESSAGE=
+		    printedMessages=
+		    printedMessage=
+		    printedUpdateMessage=
+		else
+		    return 1
+		fi
+	    fi
+	fi
+
+	if [ "$isNeedEval" ]; then
+	    eval "${commands[@]}"
+	else
+	    "${commands[@]}"
+	fi
+	status=$?
+    fi
+
 
     let UPDATE_COUNT+=1
     [ -n "${message+t}" ] && GIVEN_MESSAGE="$message"
@@ -260,7 +287,6 @@ update()
     [ -n "${updateMessage+t}" ] && GIVEN_UPDATE_MESSAGE="$updateMessage"
     PRINTED_UPDATE_MESSAGE="$(expandSymbols "$GIVEN_UPDATE_MESSAGE")"
 
-    local status=0
     local updateMessage
     if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
 	updateMessage="${printedMessages//?/${ERASE}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}${printedMessages:+${ERASE_LINE_TO_END}}"
@@ -276,16 +302,6 @@ update()
     fi
     updateDatabase || status=5
     return $status
-
-    if [ ${#commands[@]} -eq 0 ]; then
-	:
-    else
-	if [ "$isNeedEval" ]; then
-	    eval "${commands[@]}"
-	else
-	    "${commands[@]}"
-	fi
-    fi
 }
 
 "$action"
