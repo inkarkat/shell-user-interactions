@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear'
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [--silent-command]] [[--] SIMPLECOMMAND]'
 }
@@ -61,6 +61,7 @@ EXIT STATUS:
     2	Bad invocation, wrong or missing command-line arguments.
     3	Internal error or failed assertion. TODO
     4	The passed ID does not exist.
+    5	Database access failed.
     * any exit status from COMMANDS
 Example:
 HELPTEXT
@@ -85,13 +86,15 @@ badArgumentError()
     exit 2
 }
 
+: ${ERASE=}
+: ${ERASE_LINE_TO_END=[0K}
 : ${NOW:=$(date +%s)}
+: ${DURATION_MESSAGE_TIMESTAMP:=%d-%b-%Y %T}
 action=
 id=
 isNeedEval=
-message=
-updateMessage=
-isCleared=
+unset message
+unset updateMessage
 typeset -a commands=()
 isSilentCommand=
 while [ $# -ne 0 ]
@@ -130,25 +133,30 @@ elif [ ! "$id" ]; then
 elif [ "$action" != update ]; then
     if [ ${#commands[@]} -gt 0 ]; then
 	badArgumentError 'A COMMAND can only be passed to --update.'
-    elif [ -n "$updateMessage" ]; then
-	badArgumentError '--update-message can only be used with --update.'
-    elif [ "$action" = clear -a -n "$message" ]; then
-	badArgumentError '--message cannot be used with --clear.'
+    elif [ "$action" != initial ] && [ -n "$updateMessage" ]; then
+	badArgumentError '--update-message can only be used with --initial and --update.'
+    elif [ "$action" = clear ] && [ -n "$message" -o -n "$updateMessage" ]; then
+	badArgumentError '--message and --update-message cannot be used with --clear.'
     fi
 fi
 
 database()
 {
-    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT MESSAGE UPDATE_MESSAGE IS_CLEARED' "$@"
+    miniDB --base-type runtime --table durationMessage --schema 'ID START_EPOCH UPDATE_COUNT GIVEN_MESSAGE PRINTED_MESSAGE GIVEN_UPDATE_MESSAGE PRINTED_UPDATE_MESSAGE' "$@"
 }
 updateDatabase()
 {
-    isClearedZeroOrOne=${isCleared:-0}
-    database --update "${id:?}	$NOW	0	$message	$updateMessage	${isClearedZeroOrOne//t/1}"
+    database --update "${id:?}	$START_EPOCH	$UPDATE_COUNT	$GIVEN_MESSAGE	$PRINTED_MESSAGE	$GIVEN_UPDATE_MESSAGE	$PRINTED_UPDATE_MESSAGE"
 }
 readDatabase()
 {
-    database --query "${id:?}" --columns \*
+    local queryResult
+    if ! queryResult="$(database --query "${id:?}" --columns \* --as-shell-variables)"; then
+	printf >&2 'ERROR: ID "%s" not found.\n' "$id"
+	exit 4
+    fi
+
+    eval "$queryResult"
 }
 deleteDatabase()
 {
@@ -162,36 +170,138 @@ printfToTerminal()
     { printf "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
+expandSymbols()
+{
+    local message="$1"; shift
+    message="${message//\%COUNT%/${UPDATE_COUNT}}"
+    if [ "${message/\%DURATION%/}" != "$message" ]; then
+	message="${message//%DURATION%/$(secondsToDuration -- "$((NOW - START_EPOCH))")}"
+    fi
+    if [ "${message/\%TIMESTAMP%/}" != "$message" ]; then
+	message="${message//%TIMESTAMP%/$(date -d "@$NOW" "+$DURATION_MESSAGE_TIMESTAMP")}"
+    fi
+    printf %s "$message"
+}
+
 initial()
 {
-    updateDatabase
+    START_EPOCH=$NOW
+    UPDATE_COUNT=0
+    GIVEN_MESSAGE="$message"
+    PRINTED_MESSAGE="$(expandSymbols "$message")"
+    GIVEN_UPDATE_MESSAGE="$updateMessage"
+    PRINTED_UPDATE_MESSAGE=
 
+    local status=0
     if [ "$message" ]; then
-	printfToTerminal '%s' "$message"
+	if ! printfToTerminal '%s' "$PRINTED_MESSAGE"; then
+	    status=1
+	    PRINTED_MESSAGE=
+	fi
     fi
+
+    updateDatabase || status=5
+    return $status
 }
 
 clear()
 {
     readDatabase
+
+    local status=0
+    local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    if [ "$printedMessages" ]; then
+	if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+	    PRINTED_MESSAGE=
+	    PRINTED_UPDATE_MESSAGE=
+
+	    updateDatabase || status=5
+	else
+	    status=1
+	fi
+    fi
+    return $status
 }
 
 finish()
 {
-    :
+    readDatabase
+    let UPDATE_COUNT+=1
+
+    local status=0
+    local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    local finishMessage="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}$(expandSymbols "$message")${message:+$'\n'}"
+    if [ "$finishMessage" ]; then
+	if printfToTerminal '%s' "$finishMessage"; then
+	    deleteDatabase || status=5
+	else
+	    status=1
+	    GIVEN_MESSAGE="$message"
+	    GIVEN_UPDATE_MESSAGE=
+
+	    updateDatabase || status=5
+	fi
+    else
+	deleteDatabase || status=5
+    fi
+    return $status
 }
 
 update()
 {
-    if [ ${#commands[@]} -eq 0 ]; then
-	:
-    else
+    local status=0
+
+    readDatabase
+    local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+    local printedMessage="$PRINTED_MESSAGE"
+    local printedUpdateMessage="$PRINTED_UPDATE_MESSAGE"
+
+
+    if [ ${#commands[@]} -gt 0 ]; then
+	if [ ! "$isSilentCommand" ]; then
+	    if [ "$printedMessages" ]; then
+		if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+		    PRINTED_MESSAGE=
+		    PRINTED_UPDATE_MESSAGE=
+		    printedMessages=
+		    printedMessage=
+		    printedUpdateMessage=
+		else
+		    return 1
+		fi
+	    fi
+	fi
+
 	if [ "$isNeedEval" ]; then
 	    eval "${commands[@]}"
 	else
 	    "${commands[@]}"
 	fi
+	status=$?
     fi
+
+
+    let UPDATE_COUNT+=1
+    [ -n "${message+t}" ] && GIVEN_MESSAGE="$message"
+    PRINTED_MESSAGE="$(expandSymbols "$GIVEN_MESSAGE")"
+    [ -n "${updateMessage+t}" ] && GIVEN_UPDATE_MESSAGE="$updateMessage"
+    PRINTED_UPDATE_MESSAGE="$(expandSymbols "$GIVEN_UPDATE_MESSAGE")"
+
+    local updateMessage
+    if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
+	updateMessage="${printedMessages//?/${ERASE}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}${printedMessages:+${ERASE_LINE_TO_END}}"
+    else
+	updateMessage="${printedUpdateMessage//?/${ERASE}}${PRINTED_UPDATE_MESSAGE}${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
+    fi
+    if [ "$updateMessage" ]; then
+	if ! printfToTerminal '%s' "$updateMessage"; then
+	    status=1
+	    PRINTED_MESSAGE="$printedMessage"
+	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
+	fi
+    fi
+    updateDatabase || status=5
+    return $status
 }
 
 "$action"
