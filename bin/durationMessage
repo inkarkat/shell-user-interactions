@@ -190,7 +190,7 @@ initial()
     GIVEN_MESSAGE="$message"
     PRINTED_MESSAGE="$(expandSymbols "$message")"
     GIVEN_UPDATE_MESSAGE="$updateMessage"
-    PRINTED_UPDATE_MESSAGE=""
+    PRINTED_UPDATE_MESSAGE=
 
     local status=0
     if [ "$message" ]; then
@@ -237,7 +237,7 @@ finish()
 	else
 	    status=1
 	    GIVEN_MESSAGE="$message"
-	    GIVEN_UPDATE_MESSAGE=""
+	    GIVEN_UPDATE_MESSAGE=
 
 	    updateDatabase || status=5
 	fi
