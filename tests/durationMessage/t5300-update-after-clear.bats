@@ -2,43 +2,47 @@
 
 load fixture
 
+MESSAGE='testing it'
+UPDATE_MESSAGE=', try %COUNT%'
+
 @test "updating after clear prints the whole message again" {
-    durationMessage --id ID --initial --message 'testing it'
+    durationMessage --id ID --initial --message "$MESSAGE"
     durationMessage --id ID --clear
 
     run durationMessage --id ID --update
     [ $status -eq 0 ]
-    [ "$output" = 'testing it' ]
+    [ "$output" = "$MESSAGE" ]
 }
 
 @test "updating with update message after clear prints the whole message again" {
-    durationMessage --id ID --initial --message 'testing it'
+    durationMessage --id ID --initial --message "$MESSAGE"
     durationMessage --id ID --clear
 
-    run durationMessage --id ID --update --update-message ', try %COUNT%'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE"
     [ $status -eq 0 ]
     [ "$output" = 'testing it, try 1' ]
 }
 
 @test "updating again with update message after clear prints the whole message again" {
-    durationMessage --id ID --initial --message 'testing it'
-    durationMessage --id ID --update --update-message ', try %COUNT%'
+    durationMessage --id ID --initial --message "$MESSAGE"
+    durationMessage --id ID --update --update-message "$UPDATE_MESSAGE"
     durationMessage --id ID --clear
 
-    run durationMessage --id ID --update --update-message ', try %COUNT%'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE"
     [ $status -eq 0 ]
     [ "$output" = 'testing it, try 2' ]
 }
 
 @test "updating with update message after clear prints the whole message again, then only the update message itself" {
-    durationMessage --id ID --initial --message 'testing it'
+    durationMessage --id ID --initial --message "$MESSAGE"
     durationMessage --id ID --clear
 
-    run durationMessage --id ID --update --update-message ', try %COUNT%'
+    UPDATE_OUTPUT=', try 1'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE"
     [ $status -eq 0 ]
-    [ "$output" = 'testing it, try 1' ]
+    [ "$output" = "testing it${UPDATE_OUTPUT}" ]
 
-    run durationMessage --id ID --update --update-message ', try %COUNT%'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE"
     [ $status -eq 0 ]
-    [ "$output" = ", try 2${CLR}" ]
+    [ "$output" = "${UPDATE_OUTPUT//?/}, try 2${CLR}" ]
 }

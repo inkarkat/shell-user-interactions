@@ -2,6 +2,8 @@
 
 load fixture
 
+MESSAGE='testing it'
+
 @test "immediately finishing a known ID with a message containing symbols" {
     durationMessage --id ID --initial
 
@@ -20,7 +22,7 @@ load fixture
 }
 
 @test "finishing with unavailable sink returns 1 two times, third finishing will replace message and update count" {
-    durationMessage --id ID --initial --message 'testing it'
+    durationMessage --id ID --initial --message "$MESSAGE"
     DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --finish --message 'we are not done yet'
     [ $status -eq 1 ]
     DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --finish --message 'we are not done yet'
@@ -28,5 +30,5 @@ load fixture
 
     run durationMessage --id ID --finish --message 'we are done on %COUNT%. try'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}we are done on 3. try" ]
+    [ "$output" = "${MESSAGE//?/}${CLR}we are done on 3. try" ]
 }

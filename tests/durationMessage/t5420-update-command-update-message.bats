@@ -2,53 +2,61 @@
 
 load fixture
 
+START_MESSAGE='starting it'
+MESSAGE='testing it'
+UPDATE_MESSAGE='%TIMESTAMP%: testing %COUNT% for %DURATION%'
+
 @test "updating command with an update message containing symbols after some time increments times and counts" {
     durationMessage --id ID --initial
     let NOW+=122
 
-    run durationMessage --id ID --update --update-message '%TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command1 output'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE" -- echo 'command1 output'
+    OUTPUT='01-Apr-2020 11:08:42: testing 1 for 02:02'
     [ $status -eq 0 ]
-    [ "$output" = 'command1 output
-01-Apr-2020 11:08:42: testing 1 for 02:02' ]
+    [ "$output" = "command1 output
+${OUTPUT}" ]
 
     let NOW+=1
 
-    run durationMessage --id ID --update --update-message '%TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command2 output'
+    run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE" -- echo 'command2 output'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}command2 output
+    [ "$output" = "${OUTPUT//?/}${CLR}command2 output
 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
 }
 
 @test "updating an original message and command with an update message containing symbols after some time increments times and counts" {
-    durationMessage --id ID --initial --message 'testing it'
+    durationMessage --id ID --initial --message "$MESSAGE"
     let NOW+=122
 
-    run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command1 output'
+    OUTPUT=', 01-Apr-2020 11:08:42: testing 1 for 02:02'
+    run durationMessage --id ID --update --update-message ", $UPDATE_MESSAGE" -- echo "command1 output"
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}command1 output
-testing it, 01-Apr-2020 11:08:42: testing 1 for 02:02" ]
+    [ "$output" = "${MESSAGE//?/}${CLR}command1 output
+${MESSAGE}${OUTPUT}" ]
 
     let NOW+=1
 
-    run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command2 output'
+    run durationMessage --id ID --update --update-message ", $UPDATE_MESSAGE" -- echo 'command2 output'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}command2 output
-testing it, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = "${MESSAGE//?/}${OUTPUT//?/}${CLR}command2 output
+${MESSAGE}, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
 }
 
 @test "updating command with both message and update message after some time updates the message and appends the update message" {
-    durationMessage --id ID --initial --message 'starting it'
+    durationMessage --id ID --initial --message "$START_MESSAGE"
     let NOW+=122
 
-    run durationMessage --id ID --update --message 'testing it' --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command1 output'
+    OUTPUT=', 01-Apr-2020 11:08:42: testing 1 for 02:02'
+    run durationMessage --id ID --update --message "$MESSAGE" --update-message ", $UPDATE_MESSAGE" -- echo 'command1 output'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}command1 output
-testing it, 01-Apr-2020 11:08:42: testing 1 for 02:02" ]
+    [ "$output" = "${START_MESSAGE//?/}${CLR}command1 output
+${MESSAGE}${OUTPUT}" ]
 
     let NOW+=1
 
-    run durationMessage --id ID --update --update-message ', %TIMESTAMP%: testing %COUNT% for %DURATION%' -- echo 'command2 output'
+    OUTPUT=', 01-Apr-2020 11:08:43: testing 2 for 02:03'
+    run durationMessage --id ID --update --update-message ", $UPDATE_MESSAGE" -- echo 'command2 output'
     [ $status -eq 0 ]
-    [ "$output" = "${CLR}command2 output
-testing it, 01-Apr-2020 11:08:43: testing 2 for 02:03" ]
+    [ "$output" = "${MESSAGE//?/}${OUTPUT//?/}${CLR}command2 output
+${MESSAGE}${OUTPUT}" ]
 }
