@@ -64,7 +64,7 @@ do
 	--clear|-c)	shift; isClear=t;;
 	--clear-always|-C)
 			shift; isClear=t; trap 'clear 2>/dev/null' EXIT;;
-	--interval|-i)	shift; interval="$(timeToSeconds "$1")"; shift;;
+	--interval|-i)	shift; interval="$(timeToSeconds "$1")" || exit $?; shift;;
 	--as)		shift; render="$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
@@ -75,7 +75,7 @@ if [ $# -ne 1 ]; then
     printShortUsage "$0" >&2
     exit 2
 fi
-delay="$(timeToSeconds "$1")"
+delay="$(timeToSeconds "$1")" || exit $?
 
 
 secondsToDuration()
