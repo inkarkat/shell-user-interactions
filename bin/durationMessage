@@ -6,7 +6,7 @@ printShortUsage()
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [-?|-h|--help]'
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear'
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [--silent-command]] [[--] SIMPLECOMMAND]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [-c ...] [--silent-command]] [[--] SIMPLECOMMAND]'
 }
 printUsage()
 {
