@@ -1,4 +1,5 @@
 #!/bin/bash
+shopt -qs extglob
 
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
@@ -125,25 +126,49 @@ printfToTerminal()
 
 isTerminalOk=t
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
-(
-    if [ "$isNeedEval" ]; then
-	eval "${commands[@]}"
-    else
-	"${commands[@]}"
-    fi
+
+
+commandErrorOutput=
+while IFS=$'\n' read -r line
+do
+    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
+}$line"
+    statusLine=$line
+done < <(
+    exec 4>&1 1>&2 2>&4 4>&-
+    (
+	if [ "$isNeedEval" ]; then
+	    eval "${commands[@]}"
+	else
+	    "${commands[@]}"
+	fi
+    )
+    printf >&2 '#%d\n' "$?"
 )
-status=$?
+exec 4>&1 1>&2 2>&4 4>&-
+
+status="${statusLine#\#}"
+commandErrorOutput="${commandErrorOutput%#+([0-9])}"
+case "$commandErrorOutput" in
+    *$'\n'?*)	isSingleCommandError=;;
+    *)		isSingleCommandError=t;;
+esac
+
+hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
-    printf %s "$successSigil"
+    hasSigil=t
+    printfToTerminal %s "$successSigil"
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
-    printf %s "$failSigil"
+    hasSigil=t
+    printfToTerminal %s "$failSigil"
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
 fi
+
 if [ "$clear" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
@@ -152,7 +177,14 @@ if [ "$clear" ] && [ \
     if [ "$isTerminalOk" ]; then
 	printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
     else
-	exit 1
+	status=1
+    fi
+fi
+if [ "$commandErrorOutput" ]; then
+    if [ "$isSingleCommandError" ]; then
+	printf >&2 "${hasSigil:+; }%s\\n" "$commandErrorOutput"
+    else
+	printf >&2 '\n%s\n' "$commandErrorOutput"
     fi
 fi
 exit $status
