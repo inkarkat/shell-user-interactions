@@ -2,28 +2,28 @@
 
 load fixture
 
-@test "single-line error from the command is individually appended to the message after the command concludes" {
+@test "single-line error from the command is individually appended to the message as the command runs" {
     run invocationMessage --message 'message: ' --inline-stderr --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command" ]
 }
 
-@test "multi-line error from the command is individually appended to the message after the command concludes" {
+@test "multi-line error from the command is individually appended to the message as the command runs" {
     run invocationMessage --message 'message: ' --inline-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}more from command" ]
 }
 
-@test "single-line error from the command is individually appended to the message and sigil after the command concludes" {
+@test "single-line error from the command is individually appended to the message and sigil as the command runs" {
     run invocationMessage --message 'message: ' --inline-stderr --success OK --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK" ]
 }
 
-@test "multi-line error from the command is individually appended to the message and sigil after the command concludes" {
+@test "multi-line error from the command is individually appended to the message and sigil as the command runs" {
     run invocationMessage --message 'message: ' --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
