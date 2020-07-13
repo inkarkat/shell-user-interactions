@@ -8,7 +8,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -42,11 +42,15 @@ HELPDESCRIPTION
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
     --inline-stderr|-i	Each line printed to stderr by COMMAND is captured and
-			individually appended behind MESSAGE, overriding any
-			previous line. This is useful when COMMAND itself prints
+			individually appended behind MESSAGE, overwriting any
+			previous line (and then eventually overwritten itself by
+			a SIGIL). This is useful when COMMAND itself prints
 			ongoing status information to stderr. By default, any
 			error output will be captured and shown after COMMAND
 			concludes (after [clearing the] MESSAGE).
+    --spinner-stderr	Each line printed to stderr by COMMAND makes a spinner
+			after MESSAGE rotate once (to indicate that COMMAND is
+			still doing its job). The output itself is discarded.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
