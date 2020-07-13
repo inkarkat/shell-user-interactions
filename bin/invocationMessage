@@ -169,11 +169,13 @@ elif [ -n "$failSigil" -a $status -ne 0 ]; then
     esac
 fi
 
+hasCleared=
 if [ "$clear" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
+    hasCleared=t
     if [ "$isTerminalOk" ]; then
 	printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
     else
@@ -181,7 +183,9 @@ if [ "$clear" ] && [ \
     fi
 fi
 if [ "$commandErrorOutput" ]; then
-    if [ "$isSingleCommandError" ]; then
+    if [ "$hasCleared" ]; then
+	printf >&2 '%s\n' "$commandErrorOutput"
+    elif [ "$isSingleCommandError" ]; then
 	printf >&2 "${hasSigil:+; }%s\\n" "$commandErrorOutput"
     else
 	printf >&2 '\n%s\n' "$commandErrorOutput"
