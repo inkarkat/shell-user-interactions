@@ -2,9 +2,6 @@
 
 load fixture
 
-export SINGLE_LINE_COMMAND='echo from command >&2'
-export MULTI_LINE_COMMAND='{ echo from command; echo more from command; } >&2'
-
 @test "single-line error from the command is appended to the message after the command concludes" {
     run invocationMessage --message 'message: ' --command "$SINGLE_LINE_COMMAND"
 
