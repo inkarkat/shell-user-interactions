@@ -1,8 +1,6 @@
 #!/usr/bin/env bats
 
 load fixture
-export INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0
-export INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=0
 
 export SINGLE_LINE_COMMAND='echo from command >&2'
 export MULTI_LINE_COMMAND='{ echo from command; echo more from command; } >&2'

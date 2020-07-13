@@ -1,8 +1,6 @@
 #!/usr/bin/env bats
 
 load fixture
-export INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0
-export INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=0
 
 @test "a successful command appends the passed success sigil" {
     run invocationMessage --message 'message: ' --success OK --fail FAILED true
