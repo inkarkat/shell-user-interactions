@@ -1,0 +1,134 @@
+#!/bin/bash
+
+: ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
+: ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Execute COMMAND while MESSAGE informs the user what is happening (when output is
+to a terminal).
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    cat <<HELPTEXT
+    --message|-m MESSAGE
+			Text describing what COMMAND is doing for the user.
+    --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
+    --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
+    --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
+			If --success is also given, will wait for
+			$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY seconds.
+    --clear|-C failure	Clear the MESSAGE if COMMAND fails, i.e. returns a
+			non-zero exit status.
+			If --fail is also given, will wait for
+			$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY seconds.
+    --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
+			succeeds or not.
+    --inline-stderr|-i	Each line printed to stderr by COMMAND is captured and
+			individually appended behind MESSAGE, overriding any
+			previous line. This is useful when COMMAND itself prints
+			ongoing status information to stderr. By default, any
+			error output will be captured and shown after COMMAND
+			concludes (after [clearing the] MESSAGE).
+    --command|-c CMD	Execute the passed command line. When this is a simple
+			command, it can also be passed as such.
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to write to the terminal.
+    2	Bad invocation, wrong or missing command-line arguments.
+    * any exit status from COMMANDS
+
+Example:
+HELPTEXT
+    printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+}
+
+: ${SAVE_CURSOR_POSITION=[s}
+: ${RESTORE_CURSOR_POSITION=[u}
+: ${ERASE_TO_END=[0J}
+unset message
+successSigil=
+failSigil=
+clear=
+isInlineStderr=
+isNeedEval=
+typeset -a commands=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--message|-m)	shift; message="$1"; shift;;
+	--success)	shift; successSigil="$1"; shift;;
+	--fail)		shift; failSigil="$1"; shift;;
+	--clear|-C)	shift
+			clear="$1"
+			case "$clear" in
+			    success|failure|all)  ;;
+			    *)  { printf 'ERROR: Invalid value for --clear: %s\n' "$clear"; echo; printShortUsage "$0"; } >&2; exit 2;;
+			esac
+			shift
+			;;
+	--inline-stderr|-i)
+			shift; isInlineStderr=t;;
+	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -ne 0 ]; then
+    if [ "$isNeedEval" ]; then
+	# Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+	# undo the effects of eval.
+	commands+=(${commands:+;} $(printf '%q ' "$@"))
+    else
+	commands=("$@")
+    fi
+fi
+if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
+    echo >&2 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+elif [ -z "${message+t}" ]; then
+    echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+elif [ ${#commands[@]} -eq 0 ]; then
+    echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+    exit 2
+fi
+
+printfToTerminal()
+{
+    # Print directly to terminal, even if stdout is redirected, ignoring a
+    # non-existing terminal.
+    { printf "$@" >"${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+}
+
+printfToTerminal %s "${SAVE_CURSOR_POSITION}$message"
+(
+    if [ "$isNeedEval" ]; then
+	eval "${commands[@]}"
+    else
+	"${commands[@]}"
+    fi
+)
+printfToTerminal %s "${RESTORE_CURSOR_POSITION}$ERASE_TO_END"
