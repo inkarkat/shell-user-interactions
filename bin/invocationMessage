@@ -131,4 +131,6 @@ printfToTerminal %s "${SAVE_CURSOR_POSITION}$message"
 	"${commands[@]}"
     fi
 )
+status=$?
 printfToTerminal %s "${RESTORE_CURSOR_POSITION}$ERASE_TO_END"
+exit $status
