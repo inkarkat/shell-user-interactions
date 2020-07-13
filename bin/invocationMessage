@@ -123,7 +123,8 @@ printfToTerminal()
     { printf "$@" >"${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
-printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message"
+isTerminalOk=t
+printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 (
     if [ "$isNeedEval" ]; then
 	eval "${commands[@]}"
@@ -148,6 +149,10 @@ if [ "$clear" ] && [ \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
-    printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    if [ "$isTerminalOk" ]; then
+	printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    else
+	exit 1
+    fi
 fi
 exit $status
