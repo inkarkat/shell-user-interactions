@@ -72,6 +72,7 @@ successSigil=
 failSigil=
 clear=
 isInlineStderr=
+renderAs=
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -91,6 +92,8 @@ do
 			;;
 	--inline-stderr|-i)
 			shift; isInlineStderr=t;;
+	--spinner-stderr)
+			shift; renderAs=spinner;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -113,6 +116,11 @@ if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
     exit 2
 elif [ -z "${message+t}" ]; then
     echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
+elif [ "$isInlineStderr" ] && [ "$renderAs" ]; then
+    echo >&2 'ERROR: Only one of --inline-stderr and --spinner-stderr can be passed.'
     echo >&2
     printShortUsage "$0" >&2
     exit 2

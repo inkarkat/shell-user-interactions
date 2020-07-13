@@ -26,3 +26,10 @@
     [ "${lines[0]}" = "ERROR: Must pass -m|--message MESSAGE." ]
     [ "${lines[1]%% *}" = 'Usage:' ]
 }
+
+@test "use of both inline-stderr and spinner-stderr prints message and usage instructions" {
+    run invocationMessage --message message --inline-stderr --spinner-stderr
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = "ERROR: Only one of --inline-stderr and --spinner-stderr can be passed." ]
+    [ "${lines[1]%% *}" = 'Usage:' ]
+}
