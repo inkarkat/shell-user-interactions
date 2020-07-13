@@ -142,8 +142,12 @@ printfToTerminal()
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 STATUSLINE_PREFIX='#-#'
+
+typeset -a SPINNER=(/ - \\ \|)
 isFirst=t
 sigilPrefix=
+nonSigilFinalOutput=
+let renderCount=0
 commandErrorOutput=
 while IFS=$'\n' read -r line
 do
@@ -160,6 +164,18 @@ do
 		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
 	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+	fi
+    elif [ "$renderAs" ]; then
+	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	if [ "$netLine" ]; then
+	    if [ "$isFirst" ]; then
+		printfToTerminal %s "${SPINNER[$renderCount]}"
+	    else
+		printfToTerminal %s "${SPINNER[$renderCount]}"
+	    fi
+	    sigilPrefix=""
+	    nonSigilFinalOutput=""
+	    let renderCount=$(((renderCount + 1) % ${#SPINNER[@]}))
 	fi
     else
 	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
@@ -200,6 +216,8 @@ elif [ -n "$failSigil" -a $status -ne 0 ]; then
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
+elif [ "$nonSigilFinalOutput" ]; then
+    printfToTerminal %s "$nonSigilFinalOutput"
 fi
 
 hasCleared=
@@ -220,4 +238,5 @@ if [ "$commandErrorOutput" ]; then
 	printf >&2 '\n%s\n' "$commandErrorOutput"
     fi
 fi
+
 exit $status
