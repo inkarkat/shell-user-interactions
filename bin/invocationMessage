@@ -132,5 +132,22 @@ printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message"
     fi
 )
 status=$?
-[ "$clear" ] && printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+if [ -n "$successSigil" -a $status -eq 0 ]; then
+    printf %s "$successSigil"
+    case "$clear" in
+	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
+    esac
+elif [ -n "$failSigil" -a $status -ne 0 ]; then
+    printf %s "$failSigil"
+    case "$clear" in
+	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
+    esac
+fi
+if [ "$clear" ] && [ \
+    "$clear" = all -o \
+    \( "$clear" = success -a $status -eq 0 \) -o \
+    \( "$clear" = failure -a $status -ne 0 \) \
+    ] ; then
+    printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+fi
 exit $status

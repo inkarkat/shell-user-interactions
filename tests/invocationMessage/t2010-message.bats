@@ -23,3 +23,7 @@ load fixture
     [ "$output" = "${SAVE_CURSOR_POSITION}message: executed
 ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
+
+@test "echo with clear does not delay" {
+    assertNoDelay invocationMessage --message 'message: ' --clear all echo executed
+}
