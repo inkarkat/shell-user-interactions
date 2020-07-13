@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
-export NO_OUTPUT="${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+export NO_OUTPUT="message: "
 
 @test "a simple failing false returns its exit status" {
     run invocationMessage --message 'message: ' false
