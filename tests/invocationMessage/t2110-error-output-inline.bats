@@ -60,3 +60,10 @@ export MULTI_LINE_COMMAND='{ echo from command; echo more from command; } >&2'
     [ $status -eq 0 ]
     [ "$output" = "${SAVE_CURSOR_POSITION}message: from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
+
+@test "multi-line error that contains the statusline marker is not individually appended" {
+    run invocationMessage --message 'message: ' --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+
+    [ $status -eq 0 ]
+    [ "$output" = "message: ${SAVE_CURSOR_POSITION}first${RESTORE_CURSOR_POSITION}${ERASE_TO_END}last" ]
+}

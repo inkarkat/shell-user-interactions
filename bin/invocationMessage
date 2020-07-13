@@ -133,14 +133,14 @@ printfToTerminal()
 
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
-
+STATUSLINE_PREFIX='#-#'
 isFirst=t
 sigilPrefix=
 commandErrorOutput=
 while IFS=$'\n' read -r line
 do
     if [ "$isInlineStderr" ]; then
-	netLine="${line%#+([0-9])}"
+	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	if [ "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
@@ -168,12 +168,12 @@ done < <(
 	    "${commands[@]}"
 	fi
     )
-    printf >&2 '#%d\n' "$?"
+    printf >&2 '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
-status="${statusLine#\#}"
-commandErrorOutput="${commandErrorOutput%#+([0-9])}"
+status="${statusLine#\#-\#}"
+commandErrorOutput="${commandErrorOutput%${STATUSLINE_PREFIX}+([0-9])}"
 case "$commandErrorOutput" in
     *$'\n'?*)	isSingleCommandError=;;
     *)		isSingleCommandError=t;;
