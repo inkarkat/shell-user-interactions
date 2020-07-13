@@ -117,14 +117,16 @@ elif [ ${#commands[@]} -eq 0 ]; then
     exit 2
 fi
 
+isTerminalOk=t
 printfToTerminal()
 {
+    [ "$isTerminalOk" ] || return 1
+
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
     { printf "$@" >"${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
-isTerminalOk=t
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 
@@ -195,11 +197,7 @@ if [ "$clear" ] && [ \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
     hasCleared=t
-    if [ "$isTerminalOk" ]; then
-	printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
-    else
-	status=1
-    fi
+    printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
 if [ "$commandErrorOutput" ]; then
     if [ "$hasCleared" ]; then
