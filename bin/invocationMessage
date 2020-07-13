@@ -128,12 +128,31 @@ isTerminalOk=t
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 
+isFirst=t
+sigilPrefix=
 commandErrorOutput=
 while IFS=$'\n' read -r line
 do
-    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
+    if [ "$isInlineStderr" ]; then
+	netLine="${line%#+([0-9])}"
+	if [ "$netLine" ]; then
+	    if [ "$isFirst" ]; then
+		if [ "$clear" ]; then
+		    printfToTerminal %s "$netLine"
+		else
+		    printfToTerminal %s "${SAVE_CURSOR_POSITION}$netLine"
+		fi
+	    else
+		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+	    fi
+	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+	fi
+    else
+	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
+    fi
     statusLine=$line
+    isFirst=
 done < <(
     exec 4>&1 1>&2 2>&4 4>&-
     (
@@ -157,13 +176,13 @@ esac
 hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$successSigil"
+    printfToTerminal %s%s "$sigilPrefix" "$successSigil"
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$failSigil"
+    printfToTerminal %s%s "$sigilPrefix" "$failSigil"
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
