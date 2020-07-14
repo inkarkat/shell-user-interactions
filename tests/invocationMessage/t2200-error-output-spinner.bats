@@ -41,14 +41,14 @@ load fixture
     run invocationMessage --message 'message: ' --spinner-stderr --clear all --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: / ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${SAVE_CURSOR_POSITION}message: /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
 
 @test "multi-line error from the command powers a spinner and then cleared" {
     run invocationMessage --message 'message: ' --spinner-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: /- ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${SAVE_CURSOR_POSITION}message: /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
 
 @test "single-line error from the command powers a spinner and then cleared with sigil" {

@@ -146,7 +146,7 @@ STATUSLINE_PREFIX='#-#'
 typeset -a SPINNER=(/ - \\ \|)
 isFirst=t
 sigilPrefix=
-nonSigilFinalOutput=
+nonSigilnonClearFinalOutput=
 let renderCount=0
 commandErrorOutput=
 while IFS=$'\n' read -r line
@@ -174,7 +174,7 @@ do
 		printfToTerminal %s "${SPINNER[$renderCount]}"
 	    fi
 	    sigilPrefix=""
-	    nonSigilFinalOutput=" "
+	    nonSigilnonClearFinalOutput=" "
 	    let renderCount=$(((renderCount + 1) % ${#SPINNER[@]}))
 	fi
     else
@@ -216,8 +216,6 @@ elif [ -n "$failSigil" -a $status -ne 0 ]; then
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
-elif [ "$nonSigilFinalOutput" ]; then
-    printfToTerminal %s "$nonSigilFinalOutput"
 fi
 
 hasCleared=
@@ -228,6 +226,9 @@ if [ "$clear" ] && [ \
     ] ; then
     hasCleared=t
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
+fi
+if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
+    printfToTerminal %s "$nonSigilnonClearFinalOutput"
 fi
 if [ "$commandErrorOutput" ]; then
     commandErrorOutput="${commandErrorOutput%$'\n'}"
