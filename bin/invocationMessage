@@ -4,12 +4,13 @@ shopt -qs extglob
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
 typeset -a SPINNER=(/ - \\ \| '')
+typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
 
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -52,6 +53,10 @@ HELPDESCRIPTION
     --spinner-stderr	Each line printed to stderr by COMMAND makes a spinner
 			after MESSAGE rotate once (to indicate that COMMAND is
 			still doing its job). The output itself is discarded.
+    --sweep-stderr	Each line printed to stderr by COMMAND changes a Knight
+			Rider-alike sweeping control after MESSAGE (to indicate
+			that COMMAND is still doing its job). The output itself
+			is discarded.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -63,6 +68,14 @@ EXIT STATUS:
 Example:
 HELPTEXT
     printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+}
+
+abortSingleRenderer()
+{
+    echo >&2 'ERROR: Only one of --inline-stderr, --spinner-stderr, or --sweep-stderr can be passed.'
+    echo >&2
+    printShortUsage "$1" >&2
+    exit 2
 }
 
 : ${SAVE_CURSOR_POSITION=[s}
@@ -94,7 +107,9 @@ do
 	--inline-stderr|-i)
 			shift; isInlineStderr=t;;
 	--spinner-stderr)
-			shift; render=("${SPINNER[@]}");;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+	--sweep-stderr)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -121,10 +136,7 @@ elif [ -z "${message+t}" ]; then
     printShortUsage "$0" >&2
     exit 2
 elif [ "$isInlineStderr" ] && [ "${#render[@]}" -gt 0 ]; then
-    echo >&2 'ERROR: Only one of --inline-stderr and --spinner-stderr can be passed.'
-    echo >&2
-    printShortUsage "$0" >&2
-    exit 2
+    abortSingleRenderer "$0"
 elif [ ${#commands[@]} -eq 0 ]; then
     echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
