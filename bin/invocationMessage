@@ -143,8 +143,7 @@ printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 STATUSLINE_PREFIX='#-#'
 
-typeset -a SPINNER=(/ - \\ \|)
-SPINNER_CLEAR=''
+typeset -a SPINNER=(/ - \\ \| '')
 isFirst=t
 sigilPrefix=
 nonSigilnonClearFinalOutput=
@@ -172,11 +171,11 @@ do
 	    if [ "$isFirst" ]; then
 		printfToTerminal %s "${SPINNER[$renderCount]}"
 	    else
-		printfToTerminal %s "${SPINNER_CLEAR}${SPINNER[$renderCount]}"
+		printfToTerminal %s "${SPINNER[-1]}${SPINNER[$renderCount]}"
 	    fi
-	    sigilPrefix="$SPINNER_CLEAR"
-	    nonSigilnonClearFinalOutput="${SPINNER_CLEAR}${SPINNER_CLEAR//?/ }"
-	    let renderCount=$(((renderCount + 1) % ${#SPINNER[@]}))
+	    sigilPrefix="${SPINNER[-1]}"
+	    nonSigilnonClearFinalOutput="${SPINNER[-1]}${SPINNER[-1]//?/ }"
+	    let renderCount=$(((renderCount + 1) % (${#SPINNER[@]} - 1)))
 	fi
     else
 	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
