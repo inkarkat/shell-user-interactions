@@ -3,6 +3,7 @@ shopt -qs extglob
 
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
+typeset -a SPINNER=(/ - \\ \| '')
 
 printShortUsage()
 {
@@ -72,7 +73,7 @@ successSigil=
 failSigil=
 clear=
 isInlineStderr=
-renderAs=
+typeset -a render=()
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -93,7 +94,7 @@ do
 	--inline-stderr|-i)
 			shift; isInlineStderr=t;;
 	--spinner-stderr)
-			shift; renderAs=spinner;;
+			shift; render=("${SPINNER[@]}");;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -119,7 +120,7 @@ elif [ -z "${message+t}" ]; then
     echo >&2
     printShortUsage "$0" >&2
     exit 2
-elif [ "$isInlineStderr" ] && [ "$renderAs" ]; then
+elif [ "$isInlineStderr" ] && [ "${#render[@]}" -gt 0 ]; then
     echo >&2 'ERROR: Only one of --inline-stderr and --spinner-stderr can be passed.'
     echo >&2
     printShortUsage "$0" >&2
@@ -143,7 +144,6 @@ printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 STATUSLINE_PREFIX='#-#'
 
-typeset -a SPINNER=(/ - \\ \| '')
 isFirst=t
 sigilPrefix=
 nonSigilnonClearFinalOutput=
@@ -165,17 +165,17 @@ do
 	    fi
 	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 	fi
-    elif [ "$renderAs" ]; then
+    elif [ "${#render[@]}" -gt 0 ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	if [ "$netLine" ]; then
 	    if [ "$isFirst" ]; then
-		printfToTerminal %s "${SPINNER[$renderCount]}"
+		printfToTerminal %s "${render[$renderCount]}"
 	    else
-		printfToTerminal %s "${SPINNER[-1]}${SPINNER[$renderCount]}"
+		printfToTerminal %s "${render[-1]}${render[$renderCount]}"
 	    fi
-	    sigilPrefix="${SPINNER[-1]}"
-	    nonSigilnonClearFinalOutput="${SPINNER[-1]}${SPINNER[-1]//?/ }"
-	    let renderCount=$(((renderCount + 1) % (${#SPINNER[@]} - 1)))
+	    sigilPrefix="${render[-1]}"
+	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+	    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 	fi
     else
 	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
