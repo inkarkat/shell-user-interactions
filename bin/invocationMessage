@@ -67,7 +67,7 @@ EXIT STATUS:
 
 Example:
 HELPTEXT
-    printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+    printf '%q %s\n' "$(basename "$1")" "-m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL cut -d\" \" -f 8 | grep --line-buffered time >&2'"
 }
 
 abortSingleRenderer()
