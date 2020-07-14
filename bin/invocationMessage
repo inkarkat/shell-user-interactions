@@ -174,7 +174,7 @@ do
 		printfToTerminal %s "${SPINNER[$renderCount]}"
 	    fi
 	    sigilPrefix=""
-	    nonSigilFinalOutput=""
+	    nonSigilFinalOutput=" "
 	    let renderCount=$(((renderCount + 1) % ${#SPINNER[@]}))
 	fi
     else
@@ -230,6 +230,7 @@ if [ "$clear" ] && [ \
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
 if [ "$commandErrorOutput" ]; then
+    commandErrorOutput="${commandErrorOutput%$'\n'}"
     if [ "$hasCleared" ]; then
 	printf >&2 '%s\n' "$commandErrorOutput"
     elif [ "$isSingleCommandError" ]; then
@@ -237,6 +238,8 @@ if [ "$commandErrorOutput" ]; then
     else
 	printf >&2 '\n%s\n' "$commandErrorOutput"
     fi
+elif [ ! "$hasCleared" ]; then
+    printfToTerminal '\n'
 fi
 
 exit $status
