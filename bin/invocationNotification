@@ -1,16 +1,16 @@
 #!/bin/bash
 shopt -qs extglob
 
-: ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
-: ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
-typeset -a SPINNER=(/ - \\ \| '')
-typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
+: ${INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=0.3}
+: ${INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY=1}
+typeset -a SPINNER=(/ - \\ \|)
+typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]')
 
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -24,23 +24,32 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
-Execute COMMAND while MESSAGE informs the user what is happening (when output is
-to a terminal).
+Execute COMMAND while MESSAGE informs the user what is happening elsewhere.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
+    --to|-t overlay	    Report in the form of overlaid text, written via
+			    ANSI escape sequences in the first line of the
+			    terminal.
+    --to|-t title	    Report in the terminal's window title via ANSI
+			    escape sequences.
+    --to|-t command	    Report by invoking
+			    INVOCATIONNOTIFICATION_COMMANDLINE while replacing
+			    {} with the message.
+    --to|-t notify	    Report via notify-send to the system's notification
+			    system.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
     --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
     --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
     --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
 			If --success is also given, will wait for
-			$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY seconds.
+			$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY seconds.
     --clear|-C failure	Clear the MESSAGE if COMMAND fails, i.e. returns a
 			non-zero exit status.
 			If --fail is also given, will wait for
-			$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY seconds.
+			$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY seconds.
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
     --inline-stderr|-i	Each line printed to stderr by COMMAND is captured and
@@ -48,8 +57,7 @@ HELPDESCRIPTION
 			previous line (and then eventually overwritten itself by
 			a SIGIL). This is useful when COMMAND itself prints
 			ongoing status information to stderr. By default, any
-			error output will be captured and shown after COMMAND
-			concludes (after [clearing the] MESSAGE).
+			error output will pass through.
     --spinner-stderr	Each line printed to stderr by COMMAND makes a spinner
 			after MESSAGE rotate once (to indicate that COMMAND is
 			still doing its job). The output itself is discarded.
@@ -61,13 +69,22 @@ HELPDESCRIPTION
 			command, it can also be passed as such.
 EXIT STATUS:
     0	Complete success.
-    1	Failed to write to the terminal.
+    1	Failed to notify.
     2	Bad invocation, wrong or missing command-line arguments.
     * any exit status from COMMANDS
 
 Example:
 HELPTEXT
     printf '%q %s\n' "$(basename "$1")" "-m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL cut -d\" \" -f 8 | grep --line-buffered time >&2'"
+}
+singleTargetCheck()
+{
+    if [ "$target" ]; then
+	echo >&2 "ERROR: There can be only one --to."
+	echo >&2
+	printShortUsage "$1" >&2
+	exit 2
+    fi
 }
 
 abortSingleRenderer()
@@ -78,9 +95,52 @@ abortSingleRenderer()
     exit 2
 }
 
+overlayTarget()
+{
+    :
+}
+titleTarget()
+{
+    :
+}
+commandTarget()
+{
+    :
+}
+notifyTarget()
+{
+    :
+}
+
 : ${SAVE_CURSOR_POSITION=[s}
 : ${RESTORE_CURSOR_POSITION=[u}
-: ${ERASE_TO_END=[0J}
+: ${INVOCATIONNOTIFICATION_OVERLAY_JUMP=[s[1;1H}
+: ${INVOCATIONNOTIFICATION_OVERLAY_PREFIX=[37;44m[}
+: ${INVOCATIONNOTIFICATION_OVERLAY_SUFFIX=][0m}
+: ${INVOCATIONNOTIFICATION_OVERLAY_RETURN=[u}
+case "$TERM" in
+    screen*)
+	: ${INVOCATIONNOTIFICATION_TITLE_SET=']2;'}
+	: ${INVOCATIONNOTIFICATION_TITLE_FINISH='\'}
+	;;
+    linux)
+	# The Linux kernel console doesn't have a title, as it runs full-screen.
+	printf >&2 'ERROR: Cannot drive terminal title with TERM=%s\n' "$TERM"
+	exit 3
+	;;
+    *)
+	: ${INVOCATIONNOTIFICATION_TITLE_SET=']2;'}
+	: ${INVOCATIONNOTIFICATION_TITLE_FINISH=''}
+	;;
+esac
+EXEC=exec
+: ${INVOCATIONNOTIFICATION_TITLE_UPDATE_DELAY:=0}
+: ${INVOCATIONNOTIFICATION_TITLE_PREFIX=[}
+: ${INVOCATIONNOTIFICATION_TITLE_SUFFIX=]}
+: ${INVOCATIONNOTIFICATION_COMMAND_UPDATE_DELAY:=1}
+: ${INVOCATIONNOTIFICATION_NOTIFY_SEND:=notify-send}
+: ${INVOCATIONNOTIFICATION_NOTIFY_UPDATE_DELAY:=10}
+target=
 unset message
 successSigil=
 failSigil=
@@ -93,6 +153,7 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--to|-t)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s' "$1"; echo; printShortUsage "$0"; exit 2; fi >&2; shift;;
 	--message|-m)	shift; message="$1"; shift;;
 	--success)	shift; successSigil="$1"; shift;;
 	--fail)		shift; failSigil="$1"; shift;;
@@ -125,10 +186,15 @@ if [ $# -ne 0 ]; then
 	commands=("$@")
     fi
 fi
-if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
+if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
+    echo >&2 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
     echo >&2
     printShortUsage "$0" >&2
+    exit 2
+elif [ -z "$target" ]; then
+    echo >&2 'ERROR: No --to target passed.'
+    echo >&2
+    printShortUsage "$1" >&2
     exit 2
 elif [ -z "${message+t}" ]; then
     echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
@@ -149,52 +215,37 @@ printfToTerminal()
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >"${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    { printf "$@" >"${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
-printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 STATUSLINE_PREFIX='#-#'
 
-isFirst=t
-sigilPrefix=
-nonSigilnonClearFinalOutput=
 let renderCount=0
-commandErrorOutput=
+unset previousLine
+unset status
 while IFS=$'\n' read -r line
 do
+    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+
     if [ "$isInlineStderr" ]; then
-	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	if [ "$netLine" ]; then
-	    if [ "$isFirst" ]; then
-		if [ "$clear" ]; then
-		    printfToTerminal %s "$netLine"
-		else
-		    printfToTerminal %s "${SAVE_CURSOR_POSITION}$netLine"
-		fi
-	    else
-		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
-	    fi
-	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+	    "$target" "$netLine" || status=$?
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
-	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	if [ "$netLine" ]; then
-	    if [ "$isFirst" ]; then
-		printfToTerminal %s "${render[$renderCount]}"
-	    else
-		printfToTerminal %s "${render[-1]}${render[$renderCount]}"
-	    fi
-	    sigilPrefix="${render[-1]}"
-	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
-	    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+	    "$target" "${render[$renderCount]}" || status=$?
+	    let renderCount=$(((renderCount + 1) % ${#render[@]}))
 	fi
     else
-	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
-}$line"
+	# To avoid printing the last (exit status) line, buffer one line and
+	# lag behind one line with printing.
+	if [ -n "${previousLine+t}" ]; then
+	    printf >&2 '%s\n' "$previousLine"
+	fi
+	previousLine="$line"
     fi
     statusLine="$line"
-    isFirst=
 done < <(
     exec 4>&1 1>&2 2>&4 4>&-
     (
@@ -208,51 +259,26 @@ done < <(
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
-status="${statusLine#\#-\#}"
-commandErrorOutput="${commandErrorOutput%${STATUSLINE_PREFIX}+([0-9])}"
-case "$commandErrorOutput" in
-    *$'\n'?*)	isSingleCommandError=;;
-    *)		isSingleCommandError=t;;
-esac
+[ -n "${status+t}" ] || status="${statusLine#\#-\#}"
 
-hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
-    hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$successSigil"
+    "$target" "$successSigil" || status=$?
     case "$clear" in
-	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
+	all|success) sleep "$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
-    hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$failSigil"
+    "$target" "$failSigil" || status=$?
     case "$clear" in
-	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
+	all|failure) sleep "$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY";;
     esac
 fi
 
-hasCleared=
 if [ "$clear" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
-    hasCleared=t
-    printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
-fi
-if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
-    printfToTerminal %s "$nonSigilnonClearFinalOutput"
-fi
-if [ "$commandErrorOutput" ]; then
-    commandErrorOutput="${commandErrorOutput%$'\n'}"
-    if [ "$hasCleared" ]; then
-	printf >&2 '%s\n' "$commandErrorOutput"
-    elif [ "$isSingleCommandError" ]; then
-	printf >&2 "${hasSigil:+; }%s\\n" "$commandErrorOutput"
-    else
-	printf >&2 '\n%s\n' "$commandErrorOutput"
-    fi
-elif [ ! "$hasCleared" ]; then
-    printfToTerminal '\n'
+    "$target" '' || status=$?
 fi
 
 exit $status
