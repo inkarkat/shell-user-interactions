@@ -97,7 +97,11 @@ abortSingleRenderer()
 
 overlayTarget()
 {
-    :
+    if [ $# -eq 0 ]; then
+	printfToTerminal %s "$INVOCATIONNOTIFICATION_OVERLAY_JUMP" "$ERASE_LINE_TO_END" "$INVOCATIONNOTIFICATION_OVERLAY_RETURN"
+    else
+	printfToTerminal %s "$INVOCATIONNOTIFICATION_OVERLAY_JUMP" "$INVOCATIONNOTIFICATION_OVERLAY_PREFIX" "$message" "$INVOCATIONNOTIFICATION_OVERLAY_SUFFIX" "$INVOCATIONNOTIFICATION_OVERLAY_RETURN"
+    fi
 }
 titleTarget()
 {
@@ -114,6 +118,7 @@ notifyTarget()
 
 : ${SAVE_CURSOR_POSITION=[s}
 : ${RESTORE_CURSOR_POSITION=[u}
+: ${ERASE_LINE_TO_END=[0K}
 : ${INVOCATIONNOTIFICATION_OVERLAY_JUMP=[s[1;1H}
 : ${INVOCATIONNOTIFICATION_OVERLAY_PREFIX=[37;44m[}
 : ${INVOCATIONNOTIFICATION_OVERLAY_SUFFIX=][0m}
@@ -208,16 +213,17 @@ elif [ ${#commands[@]} -eq 0 ]; then
     exit 2
 fi
 
-isTerminalOk=t
+isTargetOk=t
 printfToTerminal()
 {
-    [ "$isTerminalOk" ] || return 1
+    [ "$isTargetOk" ] || return 1
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
     { printf "$@" >"${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
+"$target" '' || isTargetOk=
 
 STATUSLINE_PREFIX='#-#'
 
@@ -278,7 +284,7 @@ if [ "$clear" ] && [ \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
-    "$target" '' || status=$?
+    "$target" || status=$?
 fi
 
 exit $status

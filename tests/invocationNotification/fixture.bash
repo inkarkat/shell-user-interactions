@@ -9,6 +9,7 @@ export MULTI_LINE_COMMAND='{ echo from command; echo more from command; } >&2'
 
 export SAVE_CURSOR_POSITION='[s'
 export RESTORE_CURSOR_POSITION='[u'
+export ERASE_LINE_TO_END='[0K'
 
 assertNoDelay()
 {
