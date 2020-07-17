@@ -215,6 +215,18 @@ elif [ ${#commands[@]} -eq 0 ]; then
     echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
 fi
+if [ "$target" = 'commandTarget' ]; then
+    if [ -z "$INVOCATIONNOTIFICATION_COMMANDLINE" ]; then
+	echo >&2 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
+	exit 2
+    fi
+    if [ "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
+	eval "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" || exit $?
+    fi
+    if [ "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
+	trap "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" EXIT
+    fi
+fi
 
 isTargetOk=t
 printfToTerminal()
