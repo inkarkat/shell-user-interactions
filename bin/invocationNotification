@@ -138,7 +138,6 @@ case "$TERM" in
 	: ${INVOCATIONNOTIFICATION_TITLE_FINISH=''}
 	;;
 esac
-EXEC=exec
 : ${INVOCATIONNOTIFICATION_TITLE_UPDATE_DELAY:=0}
 : ${INVOCATIONNOTIFICATION_TITLE_PREFIX=[}
 : ${INVOCATIONNOTIFICATION_TITLE_SUFFIX=]}
@@ -230,6 +229,7 @@ STATUSLINE_PREFIX='#-#'
 let renderCount=0
 unset previousLine
 unset status
+exec 4>&1 1>&2 2>&4 4>&-
 while IFS=$'\n' read -r line
 do
     netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
@@ -247,21 +247,20 @@ do
 	# To avoid printing the last (exit status) line, buffer one line and
 	# lag behind one line with printing.
 	if [ -n "${previousLine+t}" ]; then
-	    printf >&2 '%s\n' "$previousLine"
+	    printf '%s\n' "$previousLine"
 	fi
 	previousLine="$line"
     fi
     statusLine="$line"
 done < <(
-    exec 4>&1 1>&2 2>&4 4>&-
     (
 	if [ "$isNeedEval" ]; then
 	    eval "${commands[@]}"
 	else
 	    "${commands[@]}"
-	fi
+	fi 4>&1 1>&2 2>&4 4>&-
     )
-    printf >&2 '%s%d\n' "$STATUSLINE_PREFIX" "$?"
+    printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
