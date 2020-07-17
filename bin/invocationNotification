@@ -105,7 +105,11 @@ overlayTarget()
 }
 titleTarget()
 {
-    :
+    if [ $# -eq 0 ]; then
+	printfToTerminal %s "$INVOCATIONNOTIFICATION_TITLE_SET" "$INVOCATIONNOTIFICATION_TITLE_FINISH"
+    else
+	printfToTerminal %s "$INVOCATIONNOTIFICATION_TITLE_SET" "$message" "$1" "$INVOCATIONNOTIFICATION_TITLE_FINISH"
+    fi
 }
 commandTarget()
 {
