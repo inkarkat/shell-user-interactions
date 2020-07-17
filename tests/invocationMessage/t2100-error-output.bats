@@ -13,7 +13,7 @@ load fixture
     INVOCATIONMESSAGE_STDERR_TO_TERM=t run invocationMessage --message 'message: ' --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 
+    [ "$output" = "message:${SP}
 from command
 more from command" ]
 }

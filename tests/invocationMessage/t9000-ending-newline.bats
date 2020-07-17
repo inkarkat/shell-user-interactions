@@ -20,7 +20,7 @@ runWithFullOutput()
     runWithFullOutput invocationMessage --message 'message: ' true
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 
+    [ "$output" = "message:${SP}
 " ]
 }
 
@@ -58,7 +58,7 @@ runWithFullOutput()
     runWithFullOutput invocationMessage --message 'message: ' --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 
+    [ "$output" = "message:${SP}
 from command
 more from command
 " ]
@@ -166,7 +166,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: / 
+    [ "$output" = "message: /${SP}
 " ]
 }
 
@@ -174,7 +174,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: /- 
+    [ "$output" = "message: /-${SP}
 " ]
 }
 
@@ -226,6 +226,6 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 
     [ $status -eq 0 ]
-    [ "$output" = "message: /- 
+    [ "$output" = "message: /-${SP}
 " ]
 }
