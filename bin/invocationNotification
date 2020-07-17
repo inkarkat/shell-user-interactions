@@ -111,9 +111,15 @@ titleTarget()
 	printfToTerminal %s "$INVOCATIONNOTIFICATION_TITLE_SET" "$message" "$1" "$INVOCATIONNOTIFICATION_TITLE_FINISH"
     fi
 }
+commandStatus=0
 commandTarget()
 {
-    :
+    [ $commandStatus -eq 0 ] || return $commandStatus
+
+    local quotedArgument=; [ $# -gt 0 ] && printf -v quotedArgument %q "${message}$1"
+    eval "${INVOCATIONNOTIFICATION_COMMANDLINE//\{\}/$quotedArgument}"
+    commandStatus=$?
+    return $commandStatus
 }
 notifyTarget()
 {
