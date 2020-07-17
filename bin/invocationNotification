@@ -123,7 +123,7 @@ commandTarget()
 }
 notifyTarget()
 {
-    :
+    commandTarget "$@"
 }
 
 : ${SAVE_CURSOR_POSITION=[s}
@@ -229,6 +229,16 @@ if [ "$target" = 'commandTarget' ]; then
     if [ "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
 	trap "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" EXIT
     fi
+elif [ "$target" = 'notifyTarget' ]; then
+    if [ -z "$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE" ] && ! which "$INVOCATIONNOTIFICATION_NOTIFY_SEND" >/dev/null 2>&1; then
+	printf >&2 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
+	exit 2
+    fi
+    printf -v quotedCommandName %q "$(commandName --no-interpreter ${isNeedEval:+--eval} "${commands[@]}")"
+    : ${INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE:="\"$INVOCATIONNOTIFICATION_NOTIFY_SEND\"${INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS:+ $INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS} $quotedCommandName -- {}"}
+
+    # Reuse the commandTarget for this specialization.
+    INVOCATIONNOTIFICATION_COMMANDLINE="$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE"
 fi
 
 isTargetOk=t
