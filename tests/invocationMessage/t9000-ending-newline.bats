@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+export INVOCATIONMESSAGE_STDERR_TO_TERM=t
 
 runneeWrapper()
 {

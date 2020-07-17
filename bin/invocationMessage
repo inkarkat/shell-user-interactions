@@ -78,6 +78,10 @@ abortSingleRenderer()
     exit 2
 }
 
+if [ -z "${INVOCATIONMESSAGE_STDERR_TO_TERM+t}" ]; then
+    [ -t 2 ] && INVOCATIONMESSAGE_STDERR_TO_TERM=t
+fi
+
 : ${SAVE_CURSOR_POSITION=[s}
 : ${RESTORE_CURSOR_POSITION=[u}
 : ${ERASE_TO_END=[0J}
@@ -161,6 +165,7 @@ sigilPrefix=
 nonSigilnonClearFinalOutput=
 let renderCount=0
 commandErrorOutput=
+exec 4>&1 1>&2 2>&4 4>&-
 while IFS=$'\n' read -r line
 do
     if [ "$isInlineStderr" ]; then
@@ -196,15 +201,14 @@ do
     statusLine="$line"
     isFirst=
 done < <(
-    exec 4>&1 1>&2 2>&4 4>&-
     (
 	if [ "$isNeedEval" ]; then
 	    eval "${commands[@]}"
 	else
 	    "${commands[@]}"
-	fi
+	fi 4>&1 1>&2 2>&4 4>&-
     )
-    printf >&2 '%s%d\n' "$STATUSLINE_PREFIX" "$?"
+    printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
@@ -218,13 +222,13 @@ esac
 hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$successSigil"
+    printfToTerminal %s%s "$sigilPrefix" "$successSigil" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$failSigil"
+    printfToTerminal %s%s "$sigilPrefix" "$failSigil" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
@@ -240,19 +244,28 @@ if [ "$clear" ] && [ \
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
 if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
-    printfToTerminal %s "$nonSigilnonClearFinalOutput"
+    printfToTerminal %s "$nonSigilnonClearFinalOutput" || status=1
 fi
 if [ "$commandErrorOutput" ]; then
     commandErrorOutput="${commandErrorOutput%$'\n'}"
     if [ "$hasCleared" ]; then
 	printf >&2 '%s\n' "$commandErrorOutput"
     elif [ "$isSingleCommandError" ]; then
-	printf >&2 "${hasSigil:+; }%s\\n" "$commandErrorOutput"
+	if [ "$hasSigil" ] && [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+	    printfToTerminal '; ' || status=1
+	fi
+	printf >&2 "%s\\n" "$commandErrorOutput"
     else
-	printf >&2 '\n%s\n' "$commandErrorOutput"
+	if [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+	    printfToTerminal '\n' || status=1
+	fi
+	printf >&2 '%s\n' "$commandErrorOutput"
+    fi
+    if [ ! "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+	printfToTerminal '\n' || status=1
     fi
 elif [ ! "$hasCleared" ]; then
-    printfToTerminal '\n'
+    printfToTerminal '\n' || status=1
 fi
 
 exit $status
