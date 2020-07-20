@@ -205,7 +205,7 @@ do
 	    else
 		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
-	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"

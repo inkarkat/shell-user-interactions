@@ -59,7 +59,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${SAVE_CURSOR_POSITION}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 }
 
 @test "multi-line output from the command is individually appended and then cleared with sigil" {
@@ -68,5 +68,5 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "${SAVE_CURSOR_POSITION}message: stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+     assert_sink "${SAVE_CURSOR_POSITION}message: stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 }
