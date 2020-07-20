@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -52,7 +52,22 @@ HELPDESCRIPTION
 			$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY seconds.
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
-    --inline-stderr|-i	Each line printed to stderr by COMMAND is captured and
+    --inline|-i		Each line printed to stdout or stderr by COMMAND is
+			captured and individually appended behind MESSAGE,
+			overwriting any previous line (and then eventually
+			overwritten itself by a SIGIL). Only stdout will pass
+			through. This is useful when COMMAND itself prints
+			ongoing results or status information.
+			By default, both stdout and stderr will pass through.
+    --spinner		Each line printed to stdout or stderr by COMMAND makes a
+			spinner after MESSAGE rotate once (to indicate that
+			COMMAND is still doing its job). Both stdout and stderr
+			output is still passed through.
+    --sweep		Each line printed to stdout or stderr by COMMAND changes
+			a Knight Rider-alike sweeping control after MESSAGE (to
+			indicate that COMMAND is still doing its job). Both
+			stdout and stderr output is still passed through.
+    --inline-stderr	Each line printed to stderr by COMMAND is captured and
 			individually appended behind MESSAGE, overwriting any
 			previous line (and then eventually overwritten itself by
 			a SIGIL). This is useful when COMMAND itself prints
@@ -156,7 +171,8 @@ unset message
 successSigil=
 failSigil=
 clear=
-isInlineStderr=
+isCaptureStdout=
+isInline=
 typeset -a render=()
 isNeedEval=
 typeset -a commands=()
@@ -176,10 +192,15 @@ do
 			esac
 			shift
 			;;
-	--inline-stderr|-i)
-			shift; isInlineStderr=t;;
+	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline-stderr)
+			shift; isInline=t;;
+	--spinner)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+	--sweep)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
@@ -212,7 +233,7 @@ elif [ -z "${message+t}" ]; then
     echo >&2
     printShortUsage "$0" >&2
     exit 2
-elif [ "$isInlineStderr" ] && [ "${#render[@]}" -gt 0 ]; then
+elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
 elif [ ${#commands[@]} -eq 0 ]; then
     echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
@@ -223,10 +244,10 @@ if [ "$target" = 'commandTarget' ]; then
 	echo >&2 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
 	exit 2
     fi
-    if [ "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
+    if [ -n "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
 	eval "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" || exit $?
     fi
-    if [ "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
+    if [ -n "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
 	trap "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" EXIT
     fi
 elif [ "$target" = 'notifyTarget' ]; then
@@ -248,13 +269,16 @@ printfToTerminal()
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >"${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    { printf "$@" >> "${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
 "$target" '' || isTargetOk=
 
 STATUSLINE_PREFIX='#-#'
+STDIN_START=''
+STDIN_END=''
 
+teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
 let renderCount=0
 unset previousLine
 unset status
@@ -263,12 +287,20 @@ while IFS=$'\n' read -r line
 do
     netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 
-    if [ "$isInlineStderr" ]; then
-	if [ "$netLine" ]; then
+    if [ "$isInline" ]; then
+	if [ -n "$netLine" ]; then
 	    "$target" "$netLine" || status=$?
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
-	if [ "$netLine" ]; then
+	if [ "$isCaptureStdout" ]; then
+	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+	    if [ -n "$stderrLine" ]; then
+		printf '%s\n' "$stderrLine"
+		netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
+	    fi
+	fi
+
+	if [ -n "$netLine" ]; then
 	    "$target" "${render[$renderCount]}" || status=$?
 	    let renderCount=$(((renderCount + 1) % ${#render[@]}))
 	fi
@@ -284,10 +316,13 @@ do
 done < <(
     (
 	if [ "$isNeedEval" ]; then
-	    eval "${commands[@]}"
+	    eval 'eval "${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	else
-	    "${commands[@]}"
+	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
+	status=${PIPESTATUS[0]}
+	${teeStdoutCommand:+sleep 0}
+	exit $status
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
