@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -43,7 +43,25 @@ HELPDESCRIPTION
 			$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY seconds.
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
-    --inline-stderr|-i	Each line printed to stderr by COMMAND is captured and
+    --inline|-i		Each line printed to stdout or stderr by COMMAND is
+			captured and individually appended behind MESSAGE,
+			overwriting any previous line (and then eventually
+			overwritten itself by a SIGIL). A copy of stdout is
+			printed after COMMAND concludes as well. This is useful
+			when COMMAND itself prints ongoing results or status
+			information.
+			By default, stdout will pass through and any error
+			output will be captured and shown after COMMAND
+			concludes (after [clearing the] MESSAGE).
+    --spinner		Each line printed to stdout or stderr by COMMAND makes a
+			spinner after MESSAGE rotate once (to indicate that
+			COMMAND is still doing its job). A copy of stdout is
+			printed after COMMAND concludes as well.
+    --sweep		Each line printed to stdout or stderr by COMMAND changes
+			a Knight Rider-alike sweeping control after MESSAGE (to
+			indicate that COMMAND is still doing its job). A copy of
+			stdout is printed after COMMAND concludes as well.
+    --inline-stderr	Each line printed to stderr by COMMAND is captured and
 			individually appended behind MESSAGE, overwriting any
 			previous line (and then eventually overwritten itself by
 			a SIGIL). This is useful when COMMAND itself prints
@@ -89,7 +107,8 @@ unset message
 successSigil=
 failSigil=
 clear=
-isInlineStderr=
+isCaptureStdout=
+isInline=
 typeset -a render=()
 isNeedEval=
 typeset -a commands=()
@@ -108,10 +127,15 @@ do
 			esac
 			shift
 			;;
-	--inline-stderr|-i)
-			shift; isInlineStderr=t;;
+	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline-stderr)
+			shift; isInline=t;;
+	--spinner)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+	--sweep)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
@@ -139,7 +163,7 @@ elif [ -z "${message+t}" ]; then
     echo >&2
     printShortUsage "$0" >&2
     exit 2
-elif [ "$isInlineStderr" ] && [ "${#render[@]}" -gt 0 ]; then
+elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
 elif [ ${#commands[@]} -eq 0 ]; then
     echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
@@ -165,10 +189,11 @@ sigilPrefix=
 nonSigilnonClearFinalOutput=
 let renderCount=0
 commandErrorOutput=
+teeStdoutCommand=; [ "$isCaptureStdout" ] && teeStdoutCommand='tee /dev/stderr'
 exec 4>&1 1>&2 2>&4 4>&-
 while IFS=$'\n' read -r line
 do
-    if [ "$isInlineStderr" ]; then
+    if [ "$isInline" ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	if [ "$netLine" ]; then
 	    if [ "$isFirst" ]; then
@@ -203,9 +228,9 @@ do
 done < <(
     (
 	if [ "$isNeedEval" ]; then
-	    eval "${commands[@]}"
+	    eval "${commands[@]}" ${teeStdoutCommand:+|}$teeStdoutCommand
 	else
-	    "${commands[@]}"
+	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
