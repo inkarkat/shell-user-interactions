@@ -275,8 +275,10 @@ printfToTerminal()
 "$target" '' || isTargetOk=
 
 STATUSLINE_PREFIX='#-#'
+STDIN_START=''
+STDIN_END=''
 
-teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; fi
+teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
 let renderCount=0
 unset previousLine
 unset status
@@ -290,6 +292,14 @@ do
 	    "$target" "$netLine" || status=$?
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
+	if [ "$isCaptureStdout" ]; then
+	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+	    if [ -n "$stderrLine" ]; then
+		printf '%s\n' "$stderrLine"
+		netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
+	    fi
+	fi
+
 	if [ -n "$netLine" ]; then
 	    "$target" "${render[$renderCount]}" || status=$?
 	    let renderCount=$(((renderCount + 1) % ${#render[@]}))
