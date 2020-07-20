@@ -247,13 +247,13 @@ esac
 hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$successSigil" || status=1
+    printfToTerminal %s "$sigilPrefix" "$successSigil" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printfToTerminal %s%s "$sigilPrefix" "$failSigil" || status=1
+    printfToTerminal %s "$sigilPrefix" "$failSigil" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
