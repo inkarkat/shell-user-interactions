@@ -244,10 +244,10 @@ if [ "$target" = 'commandTarget' ]; then
 	echo >&2 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
 	exit 2
     fi
-    if [ "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
+    if [ -n "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
 	eval "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" || exit $?
     fi
-    if [ "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
+    if [ -n "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" ]; then
 	trap "$INVOCATIONNOTIFICATION_POST_COMMANDLINE" EXIT
     fi
 elif [ "$target" = 'notifyTarget' ]; then

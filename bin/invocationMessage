@@ -199,7 +199,7 @@ while IFS=$'\n' read -r line
 do
     if [ "$isInline" ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	if [ "$netLine" ]; then
+	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
 		    printfToTerminal %s "$netLine"
