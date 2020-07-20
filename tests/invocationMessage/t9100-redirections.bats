@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
+load fixture
 export INVOCATIONMESSAGE_SINK=/dev/null
-export MIXED_COMMAND='echo stdout; echo >&2 stderr; echo stdout again; echo >&2 stderr again'
 
 @test "capture stdout output from a mixed command" {
     output="$(invocationMessage --message 'message: ' --success OK --command "$MIXED_COMMAND")"
