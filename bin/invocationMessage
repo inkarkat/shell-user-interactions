@@ -177,7 +177,7 @@ printfToTerminal()
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >"${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
@@ -228,7 +228,7 @@ do
 done < <(
     (
 	if [ "$isNeedEval" ]; then
-	    eval "${commands[@]}" ${teeStdoutCommand:+|}$teeStdoutCommand
+	    eval 'eval "${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	else
 	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
