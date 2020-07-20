@@ -16,7 +16,9 @@ load inline
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
-stdout again" ]
+stdout again
+stderr
+stderr again" ]
     assert_sink 'message: /-\| '
 }
 
@@ -45,7 +47,9 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
-stdout again" ]
+stdout again
+stderr
+stderr again" ]
     assert_sink 'message: /-\|OK'
 }
 
@@ -62,7 +66,9 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
-stdout again" ]
+stdout again
+stderr
+stderr again" ]
     assert_sink "${SAVE_CURSOR_POSITION}message: /-\\|${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 }
 
@@ -79,6 +85,8 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
-stdout again" ]
+stdout again
+stderr
+stderr again" ]
     assert_sink "${SAVE_CURSOR_POSITION}message: /-\\|OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 }

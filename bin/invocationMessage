@@ -55,12 +55,14 @@ HELPDESCRIPTION
 			concludes (after [clearing the] MESSAGE).
     --spinner		Each line printed to stdout or stderr by COMMAND makes a
 			spinner after MESSAGE rotate once (to indicate that
-			COMMAND is still doing its job). A copy of stdout is
-			printed after COMMAND concludes as well.
+			COMMAND is still doing its job). The stdout output is
+			still passed through, and a copy of stderr is printed
+			after COMMAND concludes as well.
     --sweep		Each line printed to stdout or stderr by COMMAND changes
 			a Knight Rider-alike sweeping control after MESSAGE (to
-			indicate that COMMAND is still doing its job). A copy of
-			stdout is printed after COMMAND concludes as well.
+			indicate that COMMAND is still doing its job). The
+			stdout output is still passed through, and a copy of
+			stderr is printed after COMMAND concludes as well.
     --inline-stderr	Each line printed to stderr by COMMAND is captured and
 			individually appended behind MESSAGE, overwriting any
 			previous line (and then eventually overwritten itself by
@@ -183,13 +185,15 @@ printfToTerminal()
 printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
 
 STATUSLINE_PREFIX='#-#'
+STDIN_START=''
+STDIN_END=''
 
 isFirst=t
 sigilPrefix=
 nonSigilnonClearFinalOutput=
 let renderCount=0
 commandErrorOutput=
-teeStdoutCommand=; [ "$isCaptureStdout" ] && teeStdoutCommand='tee /dev/stderr'
+teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
 exec 4>&1 1>&2 2>&4 4>&-
 while IFS=$'\n' read -r line
 do
@@ -209,7 +213,16 @@ do
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	if [ "$netLine" ]; then
+	if [ "$isCaptureStdout" ]; then
+	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+	    if [ -n "$stderrLine" ]; then
+		commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
+}$stderrLine"
+		netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
+	    fi
+	fi
+
+	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		printfToTerminal %s "${render[$renderCount]}"
 	    else
@@ -233,6 +246,7 @@ done < <(
 	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
 	status=${PIPESTATUS[0]}
+	${teeStdoutCommand:+sleep 0}
 	exit $status
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
