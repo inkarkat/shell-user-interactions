@@ -232,6 +232,8 @@ done < <(
 	else
 	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
+	status=${PIPESTATUS[0]}
+	exit $status
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
@@ -271,7 +273,7 @@ fi
 if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
     printfToTerminal %s "$nonSigilnonClearFinalOutput" || status=1
 fi
-if [ "$commandErrorOutput" ]; then
+if [ -n "$commandErrorOutput" ]; then
     commandErrorOutput="${commandErrorOutput%$'\n'}"
     if [ "$hasCleared" ]; then
 	printf >&2 '%s\n' "$commandErrorOutput"
