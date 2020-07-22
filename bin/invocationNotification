@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -80,6 +80,15 @@ HELPDESCRIPTION
 			Rider-alike sweeping control after MESSAGE (to indicate
 			that COMMAND is still doing its job). The output itself
 			is discarded.
+    --timespan|-t TIMESPAN[SUFFIX]
+			Only append / spin / sweep a line every TIMESPAN instead
+			of using every line. SUFFIX may be 'ms' for
+			milliseconds, 's' for seconds (the default), 'm' for
+			minutes, 'h' for hours or 'd' for days.
+    --initial-delay|-T TIMESPAN[SUFFIX]
+			Wait for TIMESPAN before printing the message or
+			appending / spinning / sweeping based on a line. By
+			default, the message is printed immediately.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -92,6 +101,20 @@ Example:
 HELPTEXT
     printf '%q %s\n' "$(basename "$1")" "-t overlay -m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
 }
+
+timeToSeconds()
+{
+    case "$1" in
+	+([0-9])ms)	time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}";;
+	+([0-9])?(s))   time="${1%s}";;
+	+([0-9])m)	time=$((${1%m} * 60));;
+	+([0-9])h)	time=$((${1%h} * 3600));;
+	+([0-9])d)	time=$((${1%d} * 86400));;
+	*)		printf >&2 "ERROR: Illegal timespan: %s\\n" "$1"; exit 2;;
+    esac
+    printf %s "$time"
+}
+
 singleTargetCheck()
 {
     if [ "$target" ]; then
@@ -174,6 +197,8 @@ clear=
 isCaptureStdout=
 isInline=
 typeset -a render=()
+timespan=1
+initialDelay=0
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
