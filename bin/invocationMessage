@@ -206,10 +206,18 @@ printfToTerminal()
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    if ! { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
 }
 
-printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
+printMessage()
+{
+    printfToTerminal "$@"
+}
+
+printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
 
 STATUSLINE_PREFIX='#-#'
 STDIN_START=''
@@ -229,12 +237,12 @@ do
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
-		    printfToTerminal %s "$netLine"
+		    printMessage %s "$netLine"
 		else
-		    printfToTerminal %s "${SAVE_CURSOR_POSITION}$netLine"
+		    printMessage %s "${SAVE_CURSOR_POSITION}$netLine"
 		fi
 	    else
-		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		printMessage %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
 	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	fi
@@ -251,9 +259,9 @@ do
 
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
-		printfToTerminal %s "${render[$renderCount]}"
+		printMessage %s "${render[$renderCount]}"
 	    else
-		printfToTerminal %s "${render[-1]}${render[$renderCount]}"
+		printMessage %s "${render[-1]}${render[$renderCount]}"
 	    fi
 	    sigilPrefix="${render[-1]}"
 	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
