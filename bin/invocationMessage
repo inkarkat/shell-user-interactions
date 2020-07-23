@@ -199,6 +199,63 @@ elif [ ${#commands[@]} -eq 0 ]; then
     exit 2
 fi
 
+case "${timespan}:${initialDelay}" in
+    *.*)
+	: ${DATE:=date}
+
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
+	    else
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
+	    fi
+	}
+	case "$timespan" in
+	    *.*)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
+		}
+		;;
+	    *)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
+		}
+		;;
+	esac
+	;;
+    0:0)
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
+    *)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		SECONDS=0
+	    else
+		SECONDS=$((${1:-0} - ${2:-0}))
+	    fi
+	}
+	isExpired()
+	{
+	    [ $SECONDS -ge $timespan ]
+	}
+	;;
+esac
+
 isTerminalOk=t
 printfToTerminal()
 {
@@ -214,10 +271,26 @@ printfToTerminal()
 
 printMessage()
 {
+    isExpired || return 1
+
+    if [ "$delayedMessage" ]; then
+	printfToTerminal %s "$delayedMessage"
+	delayedMessage=
+    fi
+
     printfToTerminal "$@"
+
+    resetTime
+    return 0
 }
 
-printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
+resetTime "$timespan" "$initialDelay"
+delayedMessage=
+if [ $initialDelay = 0 ]; then
+    printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
+else
+    delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
+fi
 
 STATUSLINE_PREFIX='#-#'
 STDIN_START=''
@@ -240,7 +313,7 @@ do
 		    printMessage %s "$netLine"
 		else
 		    printMessage %s "${SAVE_CURSOR_POSITION}$netLine"
-		fi
+		fi && isFirst=
 	    else
 		printMessage %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
@@ -259,7 +332,7 @@ do
 
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
-		printMessage %s "${render[$renderCount]}"
+		printMessage %s "${render[$renderCount]}" && isFirst=
 	    else
 		printMessage %s "${render[-1]}${render[$renderCount]}"
 	    fi
@@ -272,7 +345,6 @@ do
 }$line"
     fi
     statusLine="$line"
-    isFirst=
 done < <(
     (
 	if [ "$isNeedEval" ]; then
