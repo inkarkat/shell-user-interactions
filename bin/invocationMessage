@@ -288,6 +288,7 @@ resetTime "$timespan" "$initialDelay"
 delayedMessage=
 if [ $initialDelay = 0 ]; then
     printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
+    resetTime "$timespan" "$initialDelay"
 else
     delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
 fi
