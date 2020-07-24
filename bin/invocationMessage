@@ -85,7 +85,9 @@ HELPDESCRIPTION
     --initial-delay|-T TIMESPAN[SUFFIX]
 			Wait for TIMESPAN before printing the message or
 			appending / spinning / sweeping based on a line. By
-			default, the message is printed immediately.
+			default, the message is printed immediately. If COMMAND
+			finishes earlier, no message (and SIGIL) get printed at
+			all.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -268,27 +270,44 @@ printfToTerminal()
 	return 1
     fi
 }
-
-printMessage()
+nonExpiryExitStatus=1
+printMessageRaw()
 {
-    isExpired || return 1
+    isExpired || return ${nonExpiryExitStatus:-1}
 
     if [ "$delayedMessage" ]; then
-	printfToTerminal %s "$delayedMessage"
+	printfToTerminal %s "$delayedMessage" || return $?
 	delayedMessage=
     fi
 
-    printfToTerminal "$@"
-
+    printfToTerminal "$@" || return $?
+}
+hasPrintedMessage=
+printMessage()
+{
+    printMessageRaw "$@" || return $?
+    hasPrintedMessage=t
+}
+printMessageAndResetTimer()
+{
+    printMessage "$@" || return $?
     resetTime
     return 0
+}
+printMessageAddendum()
+{
+    if [ "$hasPrintedMessage" ]; then
+	printfToTerminal "$@"
+    else
+	nonExpiryExitStatus=0	# Only consider writing to the terminal a failure; skipping the message because the timer hasn't expired yet is fine for the addendum.
+	printMessage "$@"
+    fi
 }
 
 resetTime "$timespan" "$initialDelay"
 delayedMessage=
 if [ $initialDelay = 0 ]; then
     printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
-    resetTime "$timespan" "$initialDelay"
 else
     delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
 fi
@@ -311,12 +330,12 @@ do
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
-		    printMessage %s "$netLine"
+		    printMessageAndResetTimer %s "$netLine"
 		else
-		    printMessage %s "${SAVE_CURSOR_POSITION}$netLine"
+		    printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}$netLine"
 		fi && isFirst=
 	    else
-		printMessage %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
 	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	fi
@@ -333,9 +352,9 @@ do
 
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
-		printMessage %s "${render[$renderCount]}" && isFirst=
+		printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
 	    else
-		printMessage %s "${render[-1]}${render[$renderCount]}"
+		printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
 	    fi
 	    sigilPrefix="${render[-1]}"
 	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
@@ -371,20 +390,20 @@ esac
 hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$sigilPrefix" "$successSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$successSigil" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$sigilPrefix" "$failSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$failSigil" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
 fi
 
 hasCleared=
-if [ "$clear" ] && [ \
+if [ "$clear" ] && [ "$hasPrintedMessage" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
@@ -392,7 +411,7 @@ if [ "$clear" ] && [ \
     hasCleared=t
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
-if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
+if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$hasPrintedMessage" ] && [ "$nonSigilnonClearFinalOutput" ]; then
     printfToTerminal %s "$nonSigilnonClearFinalOutput" || status=1
 fi
 if [ -n "$commandErrorOutput" ]; then
@@ -405,15 +424,15 @@ if [ -n "$commandErrorOutput" ]; then
 	fi
 	printf >&2 "%s\\n" "$commandErrorOutput"
     else
-	if [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+	if [ "$hasPrintedMessage" ] && [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
 	    printfToTerminal '\n' || status=1
 	fi
 	printf >&2 '%s\n' "$commandErrorOutput"
     fi
-    if [ ! "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+    if [ "$hasPrintedMessage" ] && [ ! "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
 	printfToTerminal '\n' || status=1
     fi
-elif [ ! "$hasCleared" ]; then
+elif [ "$hasPrintedMessage" ] && [ ! "$hasCleared" ]; then
     printfToTerminal '\n' || status=1
 fi
 
