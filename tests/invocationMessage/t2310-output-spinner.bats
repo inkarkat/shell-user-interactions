@@ -12,7 +12,7 @@ load inline
 }
 
 @test "multi-line output from the command powers a spinner after the message as the command runs" {
-    run invocationMessage --message 'message: ' --spinner --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --spinner --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -23,7 +23,7 @@ stderr again" ]
 }
 
 @test "full spin cycle" {
-    run invocationMessage --message 'message: ' --spinner --command 'seq 1 5'
+    run invocationMessage --message 'message: ' --timespan 0 --spinner --command 'seq 1 5'
 
     [ $status -eq 0 ]
     [ "$output" = "1
@@ -43,7 +43,7 @@ stderr again" ]
 }
 
 @test "multi-line output from the command powers a spinner after the message and sigil as the command runs" {
-    run invocationMessage --message 'message: ' --spinner --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --spinner --success OK --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -62,7 +62,7 @@ stderr again" ]
 }
 
 @test "multi-line output from the command powers a spinner and then cleared" {
-    run invocationMessage --message 'message: ' --spinner --clear all --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --spinner --clear all --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -81,7 +81,7 @@ stderr again" ]
 }
 
 @test "multi-line output from the command powers a spinner and then cleared with sigil" {
-    run invocationMessage --message 'message: ' --spinner --clear all --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --spinner --clear all --success OK --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
