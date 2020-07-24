@@ -1,20 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
-export INVOCATIONMESSAGE_STDERR_TO_TERM=t
-
-runneeWrapper()
-{
-    "$@"
-    local status=$?
-    printf '$'
-    return $status
-}
-runWithFullOutput()
-{
-    run runneeWrapper "$@"
-    output="${output%\$}"
-}
+load newline
 
 @test "true prints the message with newline" {
     runWithFullOutput invocationMessage --message 'message: ' true
