@@ -304,10 +304,11 @@ printMessageAddendum()
     fi
 }
 
+initialPrintStatus=
 resetTime "$timespan" "$initialDelay"
 delayedMessage=
 if [ $initialDelay = 0 ]; then
-    printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message"
+    printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message" || initialPrintStatus=$?
 else
     delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
 fi
@@ -436,4 +437,4 @@ elif [ "$hasPrintedMessage" ] && [ ! "$hasCleared" ]; then
     printfToTerminal '\n' || status=1
 fi
 
-exit $status
+exit ${initialPrintStatus:-$status}
