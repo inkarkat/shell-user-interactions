@@ -128,7 +128,7 @@ singleTargetCheck()
 
 abortSingleRenderer()
 {
-    echo >&2 'ERROR: Only one of --inline-stderr, --spinner-stderr, or --sweep-stderr can be passed.'
+    echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
     echo >&2
     printShortUsage "$1" >&2
     exit 2
@@ -198,7 +198,7 @@ clear=
 isCaptureStdout=
 isInline=
 typeset -a render=()
-timespan=1
+unset timespan
 initialDelay=0
 isNeedEval=
 typeset -a commands=()
@@ -218,9 +218,9 @@ do
 			esac
 			shift
 			;;
-	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline|-i)	shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t; isCaptureStdout=t;;
 	--inline-stderr)
-			shift; isInline=t;;
+			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
@@ -229,6 +229,9 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
+	--initial-delay|-T)
+			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -261,6 +264,11 @@ elif [ -z "${message+t}" ]; then
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
+elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
+    echo 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
+    exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
@@ -287,6 +295,7 @@ elif [ "$target" = 'notifyTarget' ]; then
     # Reuse the commandTarget for this specialization.
     INVOCATIONNOTIFICATION_COMMANDLINE="$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE"
 fi >&2
+: ${timespan:=0}
 
 isTargetOk=t
 printfToTerminal()
