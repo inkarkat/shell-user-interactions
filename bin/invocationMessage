@@ -116,7 +116,7 @@ timeToSeconds()
 
 abortSingleRenderer()
 {
-    echo >&2 'ERROR: Only one of --inline-stderr, --spinner-stderr, or --sweep-stderr can be passed.'
+    echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
     echo >&2
     printShortUsage "$1" >&2
     exit 2
@@ -155,9 +155,9 @@ do
 			esac
 			shift
 			;;
-	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline|-i)	shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t; isCaptureStdout=t;;
 	--inline-stderr)
-			shift; isInline=t;;
+			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
