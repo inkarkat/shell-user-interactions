@@ -82,13 +82,14 @@ HELPDESCRIPTION
 			is discarded.
     --timespan|-t TIMESPAN[SUFFIX]
 			Only append / spin / sweep a line every TIMESPAN instead
-			of using every line. SUFFIX may be 'ms' for
-			milliseconds, 's' for seconds (the default), 'm' for
-			minutes, 'h' for hours or 'd' for days.
+			of every second. Use --timespan 0 to use every line.
+			SUFFIX may be 'ms' for milliseconds, 's' for seconds
+			(the default), 'm' for minutes, 'h' for hours or 'd' for
+			days.
     --initial-delay|-T TIMESPAN[SUFFIX]
-			Wait for TIMESPAN before printing the message or
+			Wait for TIMESPAN before notifying with the message or
 			appending / spinning / sweeping based on a line. By
-			default, the message is printed immediately.
+			default, the first notification happens immediately.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
