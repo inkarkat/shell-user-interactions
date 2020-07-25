@@ -19,6 +19,14 @@ printUsage()
     printShortUsage "$1" >&2
     printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
 }
+plural()
+{
+    if [ "$1" = 1 ]; then
+	printf %s "${2}${4}"
+    else
+	printf %s "${2}${3:-s}"
+    fi
+}
 printLongUsage()
 {
     # This is the long "man page" when launched with the help argument.
@@ -29,27 +37,25 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
-    --to|-t overlay	    Report in the form of overlaid text, written via
-			    ANSI escape sequences in the first line of the
-			    terminal.
-    --to|-t title	    Report in the terminal's window title via ANSI
-			    escape sequences.
-    --to|-t command	    Report by invoking
-			    INVOCATIONNOTIFICATION_COMMANDLINE while replacing
-			    {} with the message.
-    --to|-t notify	    Report via notify-send to the system's notification
-			    system.
+    --to|-t overlay	Report in the form of overlaid text, written via ANSI
+			escape sequences in the first line of the terminal.
+    --to|-t title	Report in the terminal's window title via ANSI escape
+			sequences.
+    --to|-t command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE
+			while replacing {} with the message.
+    --to|-t notify	Report via notify-send to the system's notification
+			system.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
     --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
     --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
     --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
 			If --success is also given, will wait for
-			$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY seconds.
+			$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY $(plural $INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY second).
     --clear|-C failure	Clear the MESSAGE if COMMAND fails, i.e. returns a
 			non-zero exit status.
 			If --fail is also given, will wait for
-			$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY seconds.
+			$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY $(plural $INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY second).
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
     --inline|-i		Each line printed to stdout or stderr by COMMAND is
