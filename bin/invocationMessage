@@ -136,7 +136,7 @@ clear=
 isCaptureStdout=
 isInline=
 typeset -a render=()
-timespan=1
+unset timespan
 initialDelay=0
 isNeedEval=
 typeset -a commands=()
@@ -196,10 +196,16 @@ elif [ -z "${message+t}" ]; then
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
+elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
+    echo >&2 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
+    echo >&2
+    printShortUsage "$0" >&2
+    exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
     echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
 fi
+: ${timespan:=1}
 
 case "${timespan}:${initialDelay}" in
     *.*)

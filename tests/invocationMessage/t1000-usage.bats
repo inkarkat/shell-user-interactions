@@ -52,3 +52,10 @@ assertSingleRendererMessage() {
     run invocationMessage --message message --inline --inline-stderr
     assertSingleRendererMessage
 }
+
+@test "use of timespan without processing of lines prints message and usage instructions" {
+    run invocationMessage --message message --timespan 22
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = "ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr]." ]
+    [ "${lines[1]%% *}" = 'Usage:' ]
+}
