@@ -367,10 +367,22 @@ printfToTerminal()
     fi
 }
 
+invokeTarget()
+{
+    isExpired || return 1
+    "$target" "$@" || status=$?
+}
+invokeTargetAndResetTimer()
+{
+    invokeTarget "$@" || return $?
+    resetTime
+    return 0
+}
+
 initialTargetStatus=
 resetTime "$timespan" "$initialDelay"
 if [ $initialDelay = 0 ]; then
-    "$target" '' || initialTargetStatus=$?
+    invokeTarget '' || initialTargetStatus=$?
 fi
 
 STATUSLINE_PREFIX='#-#'
@@ -388,7 +400,7 @@ do
 
     if [ "$isInline" ]; then
 	if [ -n "$netLine" ]; then
-	    "$target" "$netLine" || status=$?
+	    invokeTargetAndResetTimer "$netLine"
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
 	if [ "$isCaptureStdout" ]; then
@@ -400,8 +412,9 @@ do
 	fi
 
 	if [ -n "$netLine" ]; then
-	    "$target" "${render[$renderCount]}" || status=$?
-	    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	    if invokeTargetAndResetTimer "${render[$renderCount]}"; then
+		let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	    fi
 	fi
     else
 	# To avoid printing the last (exit status) line, buffer one line and

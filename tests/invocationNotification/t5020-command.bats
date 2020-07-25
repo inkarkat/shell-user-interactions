@@ -40,7 +40,7 @@ load command
 }
 
 @test "multi-line error from the command is individually passed to command and finally message with sigil as the command runs" {
-    run invocationNotification --to command --message 'message: ' --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to command --message 'message: ' --timespan 0 --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "" ]
@@ -51,7 +51,7 @@ load command
 }
 
 @test "multi-line error from the command passes message and spinner, then sigil, then empty argument to command" {
-    run invocationNotification --to command --message 'message: ' --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to command --message 'message: ' --timespan 0 --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "" ]

@@ -33,14 +33,14 @@ ${C}" ]
 }
 
 @test "multi-line error from the command is individually appended to the message and sigil as the command runs" {
-    run invocationNotification --to title --message 'message: ' --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to title --message 'message: ' --timespan 0 --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}${R}message: OK${N}" ]
 }
 
 @test "multi-line error from the command powers a spinner and then cleared with sigil" {
-    run invocationNotification --to title --message 'message: ' --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to title --message 'message: ' --timespan 0 --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: OK${N}${C}" ]
