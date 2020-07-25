@@ -295,19 +295,83 @@ elif [ "$target" = 'notifyTarget' ]; then
     # Reuse the commandTarget for this specialization.
     INVOCATIONNOTIFICATION_COMMANDLINE="$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE"
 fi >&2
-: ${timespan:=0}
+: ${timespan:=1}
 
-isTargetOk=t
+case "${timespan}:${initialDelay}" in
+    *.*)
+	: ${DATE:=date}
+
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
+	    else
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
+	    fi
+	}
+	case "$timespan" in
+	    *.*)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
+		}
+		;;
+	    *)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
+		}
+		;;
+	esac
+	;;
+    0:0)
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
+    *)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		SECONDS=0
+	    else
+		SECONDS=$((${1:-0} - ${2:-0}))
+	    fi
+	}
+	isExpired()
+	{
+	    [ $SECONDS -ge $timespan ]
+	}
+	;;
+esac
+
+isTerminalOk=t
 printfToTerminal()
 {
-    [ "$isTargetOk" ] || return 1
+    [ "$isTerminalOk" ] || return 1
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >> "${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    if ! { printf "$@" >> "${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
 }
 
-"$target" '' || isTargetOk=
+initialTargetStatus=
+resetTime "$timespan" "$initialDelay"
+if [ $initialDelay = 0 ]; then
+    "$target" '' || initialTargetStatus=$?
+fi
 
 STATUSLINE_PREFIX='#-#'
 STDIN_START=''
@@ -385,4 +449,4 @@ if [ "$clear" ] && [ \
     "$target" || status=$?
 fi
 
-exit $status
+exit ${initialTargetStatus:-$status}
