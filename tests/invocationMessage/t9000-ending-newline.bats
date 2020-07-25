@@ -1,20 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
-export INVOCATIONMESSAGE_STDERR_TO_TERM=t
-
-runneeWrapper()
-{
-    "$@"
-    local status=$?
-    printf '$'
-    return $status
-}
-runWithFullOutput()
-{
-    run runneeWrapper "$@"
-    output="${output%\$}"
-}
+load newline
 
 @test "true prints the message with newline" {
     runWithFullOutput invocationMessage --message 'message: ' true
@@ -125,7 +112,7 @@ more from command
 }
 
 @test "multi-line error from the command is individually appended to the message as the command runs with newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}more from command
@@ -141,7 +128,7 @@ more from command
 }
 
 @test "multi-line error from the command is individually appended to the message and sigil as the command runs with newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK
@@ -149,14 +136,14 @@ more from command
 }
 
 @test "multi-line error from the command is individually appended and then cleared, no newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --clear all --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${SAVE_CURSOR_POSITION}message: from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
 
 @test "multi-line error from the command is individually appended and then cleared with sigil, no newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${SAVE_CURSOR_POSITION}message: from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
@@ -171,7 +158,7 @@ more from command
 }
 
 @test "multi-line error from the command powers a spinner after the message as the command runs with newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: /-${SP}
@@ -187,7 +174,7 @@ more from command
 }
 
 @test "multi-line error from the command powers a spinner after the message and sigil as the command runs with newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --success OK --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "message: /-OK
@@ -202,7 +189,7 @@ more from command
 }
 
 @test "multi-line error from the command powers a spinner and then cleared, no newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --clear all --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${SAVE_CURSOR_POSITION}message: /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
@@ -216,14 +203,14 @@ more from command
 }
 
 @test "multi-line error from the command powers a spinner and then cleared with sigil, no newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${SAVE_CURSOR_POSITION}message: /-OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
 }
 
 @test "multi-line error that contains the statusline marker does not rotate the spinner with newline" {
-    runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 
     [ $status -eq 0 ]
     [ "$output" = "message: /-${SP}

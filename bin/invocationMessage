@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -77,6 +77,18 @@ HELPDESCRIPTION
 			Rider-alike sweeping control after MESSAGE (to indicate
 			that COMMAND is still doing its job). The output itself
 			is discarded.
+    --timespan|-t TIMESPAN[SUFFIX]
+			Only append / spin / sweep a line every TIMESPAN instead
+			of every second. Use --timespan 0 to use every line.
+			SUFFIX may be 'ms' for milliseconds, 's' for seconds
+			(the default), 'm' for minutes, 'h' for hours or 'd' for
+			days.
+    --initial-delay|-T TIMESPAN[SUFFIX]
+			Wait for TIMESPAN before printing the message or
+			appending / spinning / sweeping based on a line. By
+			default, the message is printed immediately. If COMMAND
+			finishes earlier, no message (and SIGIL) get printed at
+			all.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -90,9 +102,22 @@ HELPTEXT
     printf '%q %s\n' "$(basename "$1")" "-m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
 }
 
+timeToSeconds()
+{
+    case "$1" in
+	+([0-9])ms)	time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}";;
+	+([0-9])?(s))   time="${1%s}";;
+	+([0-9])m)	time=$((${1%m} * 60));;
+	+([0-9])h)	time=$((${1%h} * 3600));;
+	+([0-9])d)	time=$((${1%d} * 86400));;
+	*)		printf >&2 "ERROR: Illegal timespan: %s\\n" "$1"; exit 2;;
+    esac
+    printf %s "$time"
+}
+
 abortSingleRenderer()
 {
-    echo >&2 'ERROR: Only one of --inline-stderr, --spinner-stderr, or --sweep-stderr can be passed.'
+    echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
     echo >&2
     printShortUsage "$1" >&2
     exit 2
@@ -112,6 +137,8 @@ clear=
 isCaptureStdout=
 isInline=
 typeset -a render=()
+unset timespan
+initialDelay=0
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -129,9 +156,9 @@ do
 			esac
 			shift
 			;;
-	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline|-i)	shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t; isCaptureStdout=t;;
 	--inline-stderr)
-			shift; isInline=t;;
+			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
@@ -140,6 +167,9 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
+	--initial-delay|-T)
+			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -156,21 +186,84 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ -z "${message+t}" ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE.'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
-elif [ ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
+    echo 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
     exit 2
-fi
+elif [ ${#commands[@]} -eq 0 ]; then
+    echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+    exit 2
+fi >&2
+: ${timespan:=1}
+
+case "${timespan}:${initialDelay}" in
+    *.*)
+	: ${DATE:=date}
+
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
+	    else
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
+	    fi
+	}
+	case "$timespan" in
+	    *.*)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
+		}
+		;;
+	    *)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
+		}
+		;;
+	esac
+	;;
+    0:0)
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
+    *)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		SECONDS=0
+	    else
+		SECONDS=$((${1:-0} - ${2:-0}))
+	    fi
+	}
+	isExpired()
+	{
+	    [ $SECONDS -ge $timespan ]
+	}
+	;;
+esac
 
 isTerminalOk=t
 printfToTerminal()
@@ -179,10 +272,53 @@ printfToTerminal()
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    if ! { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
+}
+nonExpiryExitStatus=1
+printMessageRaw()
+{
+    isExpired || return ${nonExpiryExitStatus:-1}
+
+    if [ "$delayedMessage" ]; then
+	printfToTerminal %s "$delayedMessage" || return $?
+	delayedMessage=
+    fi
+
+    printfToTerminal "$@"
+}
+hasPrintedMessage=
+printMessage()
+{
+    printMessageRaw "$@" || return $?
+    hasPrintedMessage=t
+}
+printMessageAndResetTimer()
+{
+    printMessage "$@" || return $?
+    resetTime
+    return 0
+}
+printMessageAddendum()
+{
+    if [ "$hasPrintedMessage" ]; then
+	printfToTerminal "$@"
+    else
+	nonExpiryExitStatus=0	# Only consider writing to the terminal a failure; skipping the message because the timer hasn't expired yet is fine for the addendum.
+	printMessage "$@"
+    fi
 }
 
-printfToTerminal %s "${clear:+$SAVE_CURSOR_POSITION}$message" || isTerminalOk=
+initialPrintStatus=
+resetTime "$timespan" "$initialDelay"
+delayedMessage=
+if [ $initialDelay = 0 ]; then
+    printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message" || initialPrintStatus=$?
+else
+    delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
+fi
 
 STATUSLINE_PREFIX='#-#'
 STDIN_START=''
@@ -202,12 +338,12 @@ do
 	if [ -n "$netLine" ]; then
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
-		    printfToTerminal %s "$netLine"
+		    printMessageAndResetTimer %s "$netLine"
 		else
-		    printfToTerminal %s "${SAVE_CURSOR_POSITION}$netLine"
-		fi
+		    printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}$netLine"
+		fi && isFirst=
 	    else
-		printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
 	    fi
 	    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	fi
@@ -223,21 +359,21 @@ do
 	fi
 
 	if [ -n "$netLine" ]; then
-	    if [ "$isFirst" ]; then
-		printfToTerminal %s "${render[$renderCount]}"
-	    else
-		printfToTerminal %s "${render[-1]}${render[$renderCount]}"
+	    if if [ "$isFirst" ]; then
+		    printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
+		else
+		    printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
+		fi; then
+		let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		sigilPrefix="${render[-1]}"
+		nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 	    fi
-	    sigilPrefix="${render[-1]}"
-	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
-	    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 	fi
     else
 	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
     fi
     statusLine="$line"
-    isFirst=
 done < <(
     (
 	if [ "$isNeedEval" ]; then
@@ -263,20 +399,20 @@ esac
 hasSigil=
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$sigilPrefix" "$successSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$successSigil" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printfToTerminal %s "$sigilPrefix" "$failSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$failSigil" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
 fi
 
 hasCleared=
-if [ "$clear" ] && [ \
+if [ "$clear" ] && [ "$hasPrintedMessage" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
@@ -284,7 +420,7 @@ if [ "$clear" ] && [ \
     hasCleared=t
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
-if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$nonSigilnonClearFinalOutput" ]; then
+if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$hasPrintedMessage" ] && [ "$nonSigilnonClearFinalOutput" ]; then
     printfToTerminal %s "$nonSigilnonClearFinalOutput" || status=1
 fi
 if [ -n "$commandErrorOutput" ]; then
@@ -297,16 +433,16 @@ if [ -n "$commandErrorOutput" ]; then
 	fi
 	printf >&2 "%s\\n" "$commandErrorOutput"
     else
-	if [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+	if [ "$hasPrintedMessage" ] && [ "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
 	    printfToTerminal '\n' || status=1
 	fi
 	printf >&2 '%s\n' "$commandErrorOutput"
     fi
-    if [ ! "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
+    if [ "$hasPrintedMessage" ] && [ ! "$INVOCATIONMESSAGE_STDERR_TO_TERM" ]; then
 	printfToTerminal '\n' || status=1
     fi
-elif [ ! "$hasCleared" ]; then
+elif [ "$hasPrintedMessage" ] && [ ! "$hasCleared" ]; then
     printfToTerminal '\n' || status=1
 fi
 
-exit $status
+exit ${initialPrintStatus:-$status}

@@ -13,7 +13,7 @@ load inline
 }
 
 @test "multi-line output from the command is individually appended to the message as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --inline --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -30,7 +30,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended to the message and sigil as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --inline --success OK --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline --success OK --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -47,7 +47,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended and then cleared" {
-    run invocationNotification --to overlay --message 'message: ' --inline --clear all --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline --clear all --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -64,7 +64,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended and then cleared with sigil" {
-    run invocationNotification --to overlay --message 'message: ' --inline --clear all --success OK --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline --clear all --success OK --command "$MIXED_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout

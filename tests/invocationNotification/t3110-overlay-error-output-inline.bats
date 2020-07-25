@@ -11,7 +11,7 @@ load overlay
 }
 
 @test "multi-line error from the command is individually appended to the message as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --inline-stderr --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}" ]
@@ -25,7 +25,7 @@ load overlay
 }
 
 @test "multi-line error from the command is individually appended to the message and sigil as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}${R}message: OK${N}" ]
@@ -39,7 +39,7 @@ load overlay
 }
 
 @test "multi-line error from the command is individually appended and then cleared" {
-    run invocationNotification --to overlay --message 'message: ' --inline-stderr --clear all --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}${C}" ]
@@ -53,14 +53,14 @@ load overlay
 }
 
 @test "multi-line error from the command is individually appended and then cleared with sigil" {
-    run invocationNotification --to overlay --message 'message: ' --inline-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}${R}message: OK${N}${C}" ]
 }
 
 @test "multi-line error that contains the statusline marker is not individually appended" {
-    run invocationNotification --to overlay --message 'message: ' --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: first${N}${R}message: last${N}" ]

@@ -11,14 +11,14 @@ load command
 simplecommand" ]
 }
 
-@test "once the command fails, it is not invoked any longer" {
-    printf -v INVOCATIONNOTIFICATION_COMMANDLINE 'echo X >> %q; [ $(cat %q | wc -l) -lt 3 ]' "$RUNS" "$RUNS"
+@test "once the command fails, it is not invoked any longer and its last status is returned" {
+    INVOCATIONNOTIFICATION_COMMANDLINE="$COMMANDLINE_FAIL_LATER"; export COMMANDLINE_FAIL_AFTER=3
     run invocationNotification --to command --message 'message: ' --clear all --inline-stderr --command 'seq 1 10 >&2'
 
     assert_runs "X
 X
 X"
-    [ $status -eq 1 ]
+    [ $status -eq $COMMANDLINE_FAIL_AFTER ]
     [ "$output" = "" ]
 }
 

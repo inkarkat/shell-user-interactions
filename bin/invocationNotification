@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -80,6 +80,16 @@ HELPDESCRIPTION
 			Rider-alike sweeping control after MESSAGE (to indicate
 			that COMMAND is still doing its job). The output itself
 			is discarded.
+    --timespan|-t TIMESPAN[SUFFIX]
+			Only append / spin / sweep a line every TIMESPAN instead
+			of every second. Use --timespan 0 to use every line.
+			SUFFIX may be 'ms' for milliseconds, 's' for seconds
+			(the default), 'm' for minutes, 'h' for hours or 'd' for
+			days.
+    --initial-delay|-T TIMESPAN[SUFFIX]
+			Wait for TIMESPAN before notifying with the message or
+			appending / spinning / sweeping based on a line. By
+			default, the first notification happens immediately.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -92,6 +102,20 @@ Example:
 HELPTEXT
     printf '%q %s\n' "$(basename "$1")" "-t overlay -m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
 }
+
+timeToSeconds()
+{
+    case "$1" in
+	+([0-9])ms)	time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}";;
+	+([0-9])?(s))   time="${1%s}";;
+	+([0-9])m)	time=$((${1%m} * 60));;
+	+([0-9])h)	time=$((${1%h} * 3600));;
+	+([0-9])d)	time=$((${1%d} * 86400));;
+	*)		printf >&2 "ERROR: Illegal timespan: %s\\n" "$1"; exit 2;;
+    esac
+    printf %s "$time"
+}
+
 singleTargetCheck()
 {
     if [ "$target" ]; then
@@ -104,7 +128,7 @@ singleTargetCheck()
 
 abortSingleRenderer()
 {
-    echo >&2 'ERROR: Only one of --inline-stderr, --spinner-stderr, or --sweep-stderr can be passed.'
+    echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
     echo >&2
     printShortUsage "$1" >&2
     exit 2
@@ -174,6 +198,8 @@ clear=
 isCaptureStdout=
 isInline=
 typeset -a render=()
+unset timespan
+initialDelay=0
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -192,9 +218,9 @@ do
 			esac
 			shift
 			;;
-	--inline|-i)	shift; isInline=t; isCaptureStdout=t;;
+	--inline|-i)	shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t; isCaptureStdout=t;;
 	--inline-stderr)
-			shift; isInline=t;;
+			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
@@ -203,6 +229,9 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
+	--initial-delay|-T)
+			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -219,29 +248,34 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ -z "$target" ]; then
-    echo >&2 'ERROR: No --to target passed.'
-    echo >&2
-    printShortUsage "$1" >&2
+    echo 'ERROR: No --to target passed.'
+    echo
+    printShortUsage "$1"
     exit 2
 elif [ -z "${message+t}" ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE.'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
-elif [ ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
+    echo 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
     exit 2
-fi
+elif [ ${#commands[@]} -eq 0 ]; then
+    echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+    exit 2
+fi >&2
 if [ "$target" = 'commandTarget' ]; then
     if [ -z "$INVOCATIONNOTIFICATION_COMMANDLINE" ]; then
-	echo >&2 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
+	echo 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
 	exit 2
     fi
     if [ -n "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
@@ -252,7 +286,7 @@ if [ "$target" = 'commandTarget' ]; then
     fi
 elif [ "$target" = 'notifyTarget' ]; then
     if [ -z "$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE" ] && ! which "$INVOCATIONNOTIFICATION_NOTIFY_SEND" >/dev/null 2>&1; then
-	printf >&2 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
+	printf 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
 	exit 2
     fi
     printf -v quotedCommandName %q "$(commandName --no-interpreter ${isNeedEval:+--eval} "${commands[@]}")"
@@ -260,19 +294,110 @@ elif [ "$target" = 'notifyTarget' ]; then
 
     # Reuse the commandTarget for this specialization.
     INVOCATIONNOTIFICATION_COMMANDLINE="$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE"
-fi
+fi >&2
+: ${timespan:=1}
 
-isTargetOk=t
+case "${timespan}:${initialDelay}" in
+    *.*)
+	: ${DATE:=date}
+
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
+	    else
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
+	    fi
+	}
+	case "$timespan" in
+	    *.*)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
+		}
+		;;
+	    *)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
+		}
+		;;
+	esac
+	;;
+    0:0)
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
+    *)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		SECONDS=0
+	    else
+		SECONDS=$((${1:-0} - ${2:-0}))
+	    fi
+	}
+	isExpired()
+	{
+	    [ $SECONDS -ge $timespan ]
+	}
+	;;
+esac
+
+isTerminalOk=t
 printfToTerminal()
 {
-    [ "$isTargetOk" ] || return 1
+    [ "$isTerminalOk" ] || return 1
 
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >> "${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    if ! { printf "$@" >> "${INVOCATIONNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
 }
 
-"$target" '' || isTargetOk=
+invokeTargetRaw()
+{
+    "$target" "$@" || status=$?
+}
+hasInvokedTarget=
+invokeTarget()
+{
+    isExpired || return 1
+    invokeTargetRaw "$@"
+    hasInvokedTarget=t
+}
+invokeTargetAndResetTimer()
+{
+    invokeTarget "$@" || return $?
+    resetTime
+    return 0
+}
+invokeTargetAddendum()
+{
+    if [ "$hasInvokedTarget" ]; then
+	invokeTargetRaw "$@"
+    else
+	invokeTarget "$@"
+    fi
+}
+
+initialTargetStatus=
+resetTime "$timespan" "$initialDelay"
+if [ $initialDelay = 0 ]; then
+    invokeTarget '' || initialTargetStatus=$?
+fi
 
 STATUSLINE_PREFIX='#-#'
 STDIN_START=''
@@ -289,7 +414,7 @@ do
 
     if [ "$isInline" ]; then
 	if [ -n "$netLine" ]; then
-	    "$target" "$netLine" || status=$?
+	    invokeTargetAndResetTimer "$netLine"
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
 	if [ "$isCaptureStdout" ]; then
@@ -301,8 +426,9 @@ do
 	fi
 
 	if [ -n "$netLine" ]; then
-	    "$target" "${render[$renderCount]}" || status=$?
-	    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	    if invokeTargetAndResetTimer "${render[$renderCount]}"; then
+		let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	    fi
 	fi
     else
 	# To avoid printing the last (exit status) line, buffer one line and
@@ -331,12 +457,12 @@ exec 4>&1 1>&2 2>&4 4>&-
 [ -n "${status+t}" ] || status="${statusLine#\#-\#}"
 
 if [ -n "$successSigil" -a $status -eq 0 ]; then
-    "$target" "$successSigil" || status=$?
+    invokeTargetAddendum "$successSigil"
     case "$clear" in
 	all|success) sleep "$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
-    "$target" "$failSigil" || status=$?
+    invokeTargetAddendum "$failSigil"
     case "$clear" in
 	all|failure) sleep "$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY";;
     esac
@@ -347,7 +473,7 @@ if [ "$clear" ] && [ \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
-    "$target" || status=$?
+    [ "$hasInvokedTarget" ] && invokeTargetRaw
 fi
 
-exit $status
+exit ${initialTargetStatus:-$status}
