@@ -352,14 +352,15 @@ do
 	fi
 
 	if [ -n "$netLine" ]; then
-	    if [ "$isFirst" ]; then
-		printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
-	    else
-		printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
+	    if if [ "$isFirst" ]; then
+		    printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
+		else
+		    printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
+		fi; then
+		let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		sigilPrefix="${render[-1]}"
+		nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 	    fi
-	    sigilPrefix="${render[-1]}"
-	    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
-	    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 	fi
     else
 	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
