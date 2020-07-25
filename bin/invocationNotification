@@ -367,16 +367,30 @@ printfToTerminal()
     fi
 }
 
+invokeTargetRaw()
+{
+    "$target" "$@" || status=$?
+}
+hasInvokedTarget=
 invokeTarget()
 {
     isExpired || return 1
-    "$target" "$@" || status=$?
+    invokeTargetRaw "$@"
+    hasInvokedTarget=t
 }
 invokeTargetAndResetTimer()
 {
     invokeTarget "$@" || return $?
     resetTime
     return 0
+}
+invokeTargetAddendum()
+{
+    if [ "$hasInvokedTarget" ]; then
+	invokeTargetRaw "$@"
+    else
+	invokeTarget "$@"
+    fi
 }
 
 initialTargetStatus=
@@ -443,12 +457,12 @@ exec 4>&1 1>&2 2>&4 4>&-
 [ -n "${status+t}" ] || status="${statusLine#\#-\#}"
 
 if [ -n "$successSigil" -a $status -eq 0 ]; then
-    "$target" "$successSigil" || status=$?
+    invokeTargetAddendum "$successSigil"
     case "$clear" in
 	all|success) sleep "$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
-    "$target" "$failSigil" || status=$?
+    invokeTargetAddendum "$failSigil"
     case "$clear" in
 	all|failure) sleep "$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY";;
     esac
@@ -459,7 +473,7 @@ if [ "$clear" ] && [ \
     \( "$clear" = success -a $status -eq 0 \) -o \
     \( "$clear" = failure -a $status -ne 0 \) \
     ] ; then
-    "$target" || status=$?
+    [ "$hasInvokedTarget" ] && invokeTargetRaw
 fi
 
 exit ${initialTargetStatus:-$status}
