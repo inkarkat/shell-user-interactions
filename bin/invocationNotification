@@ -245,29 +245,29 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ -z "$target" ]; then
-    echo >&2 'ERROR: No --to target passed.'
-    echo >&2
-    printShortUsage "$1" >&2
+    echo 'ERROR: No --to target passed.'
+    echo
+    printShortUsage "$1"
     exit 2
 elif [ -z "${message+t}" ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE.'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
 elif [ ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+    echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
-fi
+fi >&2
 if [ "$target" = 'commandTarget' ]; then
     if [ -z "$INVOCATIONNOTIFICATION_COMMANDLINE" ]; then
-	echo >&2 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
+	echo 'ERROR: Command notification must define INVOCATIONNOTIFICATION_COMMANDLINE.'
 	exit 2
     fi
     if [ -n "$INVOCATIONNOTIFICATION_PRE_COMMANDLINE" ]; then
@@ -278,7 +278,7 @@ if [ "$target" = 'commandTarget' ]; then
     fi
 elif [ "$target" = 'notifyTarget' ]; then
     if [ -z "$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE" ] && ! which "$INVOCATIONNOTIFICATION_NOTIFY_SEND" >/dev/null 2>&1; then
-	printf >&2 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
+	printf 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
 	exit 2
     fi
     printf -v quotedCommandName %q "$(commandName --no-interpreter ${isNeedEval:+--eval} "${commands[@]}")"
@@ -286,7 +286,7 @@ elif [ "$target" = 'notifyTarget' ]; then
 
     # Reuse the commandTarget for this specialization.
     INVOCATIONNOTIFICATION_COMMANDLINE="$INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE"
-fi
+fi >&2
 
 isTargetOk=t
 printfToTerminal()

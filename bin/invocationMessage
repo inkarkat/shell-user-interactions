@@ -186,26 +186,26 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ -z "${message+t}" ]; then
-    echo >&2 'ERROR: Must pass -m|--message MESSAGE.'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: Must pass -m|--message MESSAGE.'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
 elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
-    echo >&2 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
-    echo >&2
-    printShortUsage "$0" >&2
+    echo 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
     exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
-    echo >&2 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
+    echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
-fi
+fi >&2
 : ${timespan:=1}
 
 case "${timespan}:${initialDelay}" in
