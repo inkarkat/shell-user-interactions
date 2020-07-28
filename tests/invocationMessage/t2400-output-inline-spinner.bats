@@ -73,6 +73,27 @@ stdout again" ]
     assert_sink "${SAVE_CURSOR_POSITION}message: /-stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
 }
 
+@test "identical output lines still rotate the spinner" {
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
+${S}echo foo;
+${S}echo foo;
+${S}echo foo;
+${S}echo foo;
+${S}echo >&2 x;
+${S}echo bar;
+${S}echo bar;
+"
+
+    [ $status -eq 0 ]
+    [ "$output" = "foo
+foo
+foo
+foo
+bar
+bar" ]
+    assert_sink "message: ${SAVE_CURSOR_POSITION}foo /-\\|/${RESTORE_CURSOR_POSITION}${ERASE_TO_END}bar -\\ "
+}
+
 @test "mixed longer output starting and ending with stdout spinning" {
     run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
 ${S}echo foo;

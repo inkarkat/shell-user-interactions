@@ -376,9 +376,7 @@ do
 	    if [ "$stderrLine" != "$netLine" ]; then
 		stdinLine="${netLine#*${STDIN_START}}"
 		stdinLine="${stdinLine%%${STDIN_END}*}"
-		if [ "$stdinLine" = "$previousStdinLine" ]; then
-		    netLine="$stderrLine"	# Fall through to the plain rendering: only render if there's actual stderr output.
-		else
+		if [ "$stdinLine" != "$previousStdinLine" ]; then
 		    netLine="${stdinLine}${stdinLine:+ }"
 		    if if [ "$isFirstStdinLine" ]; then
 			undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
@@ -398,7 +396,7 @@ do
 		    previousStdinLine="$stdinLine"
 		    statusLine="$line"
 		    continue
-		fi
+		fi  # else (the stdinLine has not changed) fall through to the plain rendering below.
 	    fi
 	elif [ "$isCaptureStdout" ]; then
 	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
