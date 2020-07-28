@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -85,6 +85,14 @@ HELPDESCRIPTION
 			Rider-alike sweeping control after MESSAGE (to indicate
 			that COMMAND is still doing its job). The output itself
 			is discarded.
+    --inline-spinner-stderr
+			Lines printed to stdout are appended as with --inline,
+			but lines printed to stderr make a spinner after MESSAGE
+			/ the last line rotate like --spinner-stderr.
+    --inline-sweep-stderr
+			Lines printed to stdout are appended as with --inline,
+			but lines printed to stderr changes a sweeping control
+			after MESSAGE / the last line like --sweep-stderr.
     --timespan|-t TIMESPAN[SUFFIX]
 			Only append / spin / sweep a line every TIMESPAN instead
 			of every second. Use --timespan 0 to use every line.
@@ -144,6 +152,7 @@ failSigil=
 clear=
 isCaptureStdout=
 isInline=
+isInlineWithRender=
 typeset -a render=()
 unset timespan
 initialDelay=0
@@ -171,10 +180,14 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+	--inline-spinner-stderr)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--sweep)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+	--inline-sweep-stderr)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
@@ -335,6 +348,8 @@ STDIN_END=''
 isFirst=t
 sigilPrefix=
 nonSigilnonClearFinalOutput=
+previousStdinLine=
+isFirstStdinLine=t
 let renderCount=0
 commandErrorOutput=
 teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
@@ -356,7 +371,36 @@ do
 	fi
     elif [ "${#render[@]}" -gt 0 ]; then
 	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	if [ "$isCaptureStdout" ]; then
+	if [ "$isInlineWithRender" ]; then
+	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+	    if [ "$stderrLine" != "$netLine" ]; then
+		stdinLine="${netLine#*${STDIN_START}}"
+		stdinLine="${stdinLine%%${STDIN_END}*}"
+		if [ "$stdinLine" = "$previousStdinLine" ]; then
+		    netLine="$stderrLine"	# Fall through to the plain rendering: only render if there's actual stderr output.
+		else
+		    netLine="${stdinLine}${stdinLine:+ }"
+		    if if [ "$isFirstStdinLine" ]; then
+			undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
+			if [ "$clear" ]; then
+			    printMessageAndResetTimer %s "$undoRender" "$netLine" "${render[$renderCount]}"
+			else
+			    printMessageAndResetTimer %s "$undoRender" "${SAVE_CURSOR_POSITION}$netLine" "${render[$renderCount]}"
+			fi && { isFirstStdinLine=; isFirst=; }
+		    else
+			printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine" "${render[$renderCount]}"
+		    fi; then
+		    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
+		    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+		    fi
+
+		    previousStdinLine="$stdinLine"
+		    statusLine="$line"
+		    continue
+		fi
+	    fi
+	elif [ "$isCaptureStdout" ]; then
 	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
 	    if [ -n "$stderrLine" ]; then
 		commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
@@ -372,7 +416,7 @@ do
 		    printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
 		fi; then
 		let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
-		sigilPrefix="${render[-1]}"
+		: ${sigilPrefix:="${render[-1]}"}   # Only set when not yet initialized by inline-with-render algorithm above.
 		nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 	    fi
 	fi
