@@ -3,8 +3,6 @@
 load fixture
 load inline
 
-export S='sleep 0.01;'
-
 @test "multi-line output from the command is individually appended / error output sweeps and final sigil" {
     run invocationMessage --message 'message: ' --timespan 0 --inline-sweep-stderr --success OK --command "$MIXED_COMMAND"
 

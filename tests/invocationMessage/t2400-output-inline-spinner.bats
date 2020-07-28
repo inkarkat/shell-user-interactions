@@ -3,8 +3,6 @@
 load fixture
 load inline
 
-export S='sleep 0.01;'
-
 @test "single-line output from the command is individually appended / error output rotates the spinner" {
     run invocationMessage --message 'message: ' --inline-spinner-stderr --command "$ECHO_COMMAND"
 

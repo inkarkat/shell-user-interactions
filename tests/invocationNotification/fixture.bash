@@ -1,11 +1,13 @@
 #!/bin/bash
 
+export S='sleep 0.01;'
+
 export INVOCATIONNOTIFICATION_SINK=/dev/stdout
 export INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=0
 export INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY=0
 
 export SINGLE_LINE_COMMAND='echo from command >&2'
-export MULTI_LINE_COMMAND='{ echo from command; echo more from command; } >&2'
+export MULTI_LINE_COMMAND="{ echo from command; $S echo more from command; } >&2"
 export ECHO_COMMAND='echo stdout'
 export MIXED_COMMAND='echo stdout; echo >&2 stderr; echo stdout again; echo >&2 stderr again'
 
