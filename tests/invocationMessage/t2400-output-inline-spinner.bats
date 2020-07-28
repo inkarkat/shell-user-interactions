@@ -12,12 +12,21 @@ load inline
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
     assert_sink "message: /-${SAVE_CURSOR_POSITION}stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again | "
+}
+
+@test "multi-line output in different order from the command is individually appended / error output rotates the spinner" {
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "$MIXED_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "stdout
+stdout again" ]
+    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again \\| "
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and final sigil" {
@@ -29,7 +38,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and final sigil" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -46,7 +55,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and then cleared" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --clear all --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --clear all --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -63,7 +72,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and then cleared with sigil" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --clear all --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --clear all --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout

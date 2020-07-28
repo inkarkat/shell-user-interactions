@@ -12,12 +12,21 @@ load inline
 }
 
 @test "multi-line output from the command is individually appended to the message as the command runs" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
      assert_sink "message: ${SAVE_CURSOR_POSITION}stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again"
+}
+
+@test "multi-line output in different order from the command is individually appended to the message as the command runs" {
+    run invocationMessage --message 'message: ' --timespan 0 --inline --command "$MIXED_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "stdout
+stdout again" ]
+     assert_sink "message: ${SAVE_CURSOR_POSITION}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr again"
 }
 
 @test "single-line output from the command is individually appended to the message and sigil as the command runs" {
@@ -29,7 +38,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended to the message and sigil as the command runs" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -46,7 +55,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended and then cleared" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline --clear all --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline --clear all --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
@@ -63,7 +72,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command is individually appended and then cleared with sigil" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline --clear all --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline --clear all --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout

@@ -4,7 +4,7 @@ load fixture
 load inline
 
 @test "multi-line output from the command is individually appended / error output sweeps and final sigil" {
-    run invocationMessage --message 'message: ' --timespan 0 --inline-sweep-stderr --success OK --command "$MIXED_COMMAND"
+    run invocationMessage --message 'message: ' --timespan 0 --inline-sweep-stderr --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stdout
