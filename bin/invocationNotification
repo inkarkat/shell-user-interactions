@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -t|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -o|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -37,13 +37,13 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
-    --to|-t overlay	Report in the form of overlaid text, written via ANSI
+    --to|-o overlay	Report in the form of overlaid text, written via ANSI
 			escape sequences in the first line of the terminal.
-    --to|-t title	Report in the terminal's window title via ANSI escape
+    --to|-o title	Report in the terminal's window title via ANSI escape
 			sequences.
-    --to|-t command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE
+    --to|-o command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE
 			while replacing {} with the message.
-    --to|-t notify	Report via notify-send to the system's notification
+    --to|-o notify	Report via notify-send to the system's notification
 			system.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
@@ -213,7 +213,7 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
-	--to|-t)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s\n' "$1"; echo; printShortUsage "$0"; exit 2; fi >&2; shift;;
+	--to|-o)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s\n' "$1"; echo; printShortUsage "$0"; exit 2; fi >&2; shift;;
 	--message|-m)	shift; message="$1"; shift;;
 	--success)	shift; successSigil="$1"; shift;;
 	--fail)		shift; failSigil="$1"; shift;;
@@ -255,7 +255,7 @@ if [ $# -ne 0 ]; then
     fi
 fi
 if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
-    echo 'ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
+    echo 'ERROR: Must pass -o|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
     echo
     printShortUsage "$0"
     exit 2
