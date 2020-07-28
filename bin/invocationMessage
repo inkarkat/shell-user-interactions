@@ -433,7 +433,7 @@ done < <(
 	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
 	status=${PIPESTATUS[0]}
-	${teeStdoutCommand:+sleep 0}
+	${teeStdoutCommand:+sleep 0.01}
 	exit $status
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
