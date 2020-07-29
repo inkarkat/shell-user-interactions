@@ -509,7 +509,7 @@ done < <(
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
-[ -n "${status+t}" ] || status="${statusLine#\#-\#}"
+[ -n "${status+t}" ] || status="${statusLine##*$STATUSLINE_PREFIX}"
 
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     invokeTargetAddendum "$successSigil"

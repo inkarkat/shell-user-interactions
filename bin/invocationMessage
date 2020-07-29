@@ -438,7 +438,7 @@ done < <(
 )
 exec 4>&1 1>&2 2>&4 4>&-
 
-status="${statusLine#\#-\#}"
+status="${statusLine##*$STATUSLINE_PREFIX}"
 commandErrorOutput="${commandErrorOutput%${STATUSLINE_PREFIX}+([0-9])}"
 case "$commandErrorOutput" in
     *$'\n'?*)	isSingleCommandError=;;
