@@ -444,10 +444,15 @@ do
 		stdinLine="${netLine#*${STDIN_START}}"
 		stdinLine="${stdinLine%%${STDIN_END}*}"
 	    fi
-	    if invokeTargetAndResetTimer "${stdinLine}${stdinLine:+ }${render[$renderCount]}"; then
-		let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	    # As we do want to render empty lines output to stdout, we need to
+	    # explicitly filter out the final statusline output.
+	    if [ "$netLine" = "$line" ]; then
+		if invokeTargetAndResetTimer "${stdinLine}${stdinLine:+ }${render[$renderCount]}"; then
+		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		fi
+	    else
+		statusLine="$line"
 	    fi
-	    statusLine="$line"
 	    continue
 	elif [ "$isCaptureStdout" ]; then
 	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"

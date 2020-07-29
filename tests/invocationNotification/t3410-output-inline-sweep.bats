@@ -10,7 +10,7 @@ load inline
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: stdout [ -* ]${N}${R}message: stdout again [  -*]${N}${R}message: stdout again [   *]${N}${R}message: OK${N}"
+    assert_sink "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: stdout [ -* ]${N}${R}message: stdout again [  -*]${N}${R}message: OK${N}"
 }
 
 @test "single-line output from the command is individually appended / error output sweeps and then cleared" {
@@ -46,7 +46,7 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "${R}message: ${N}${R}message: foo [*   ]${N}${R}message: foo [-*  ]${N}${R}message: foo [ -* ]${N}${R}message: foo [  -*]${N}${R}message: second [   *]${N}${R}message: second [  *-]${N}${R}message: third argument [ *- ]${N}${R}message: immediate fourth [*-  ]${N}${R}message: immediate fourth [*   ]${N}${R}message: immediate fourth [-*  ]${N}${R}message: immediate fourth [ -* ]${N}${R}message: foo [  -*]${N}${R}message: foo [   *]${N}${R}message: last [  *-]${N}${R}message: last [ *- ]${N}"
+    assert_sink "${R}message: ${N}${R}message: foo [*   ]${N}${R}message: foo [-*  ]${N}${R}message: foo [ -* ]${N}${R}message: foo [  -*]${N}${R}message: second [   *]${N}${R}message: second [  *-]${N}${R}message: third argument [ *- ]${N}${R}message: immediate fourth [*-  ]${N}${R}message: immediate fourth [*   ]${N}${R}message: immediate fourth [-*  ]${N}${R}message: immediate fourth [ -* ]${N}${R}message: foo [  -*]${N}${R}message: foo [   *]${N}${R}message: last [  *-]${N}"
 }
 
 @test "mixed longer output starting and ending with stderr sweeping" {
@@ -79,5 +79,5 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: [ -* ]${N}${R}message: [  -*]${N}${R}message: foo [   *]${N}${R}message: foo [  *-]${N}${R}message: foo [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: second [*   ]${N}${R}message: second [-*  ]${N}${R}message: third argument [ -* ]${N}${R}message: immediate fourth [  -*]${N}${R}message: immediate fourth [   *]${N}${R}message: immediate fourth [  *-]${N}${R}message: immediate fourth [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: foo [*   ]${N}${R}message: last [-*  ]${N}${R}message: last [ -* ]${N}${R}message: last [  -*]${N}"
+    assert_sink "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: [ -* ]${N}${R}message: [  -*]${N}${R}message: foo [   *]${N}${R}message: foo [  *-]${N}${R}message: foo [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: second [*   ]${N}${R}message: second [-*  ]${N}${R}message: third argument [ -* ]${N}${R}message: immediate fourth [  -*]${N}${R}message: immediate fourth [   *]${N}${R}message: immediate fourth [  *-]${N}${R}message: immediate fourth [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: foo [*   ]${N}${R}message: last [-*  ]${N}${R}message: last [ -* ]${N}"
 }

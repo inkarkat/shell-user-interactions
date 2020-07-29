@@ -18,7 +18,7 @@ load inline
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: stdout again /${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}"
 }
 
 @test "multi-line output in different order from the command is individually appended / error output rotates the spinner" {
@@ -27,7 +27,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: stdout /${N}${R}message: stdout -${N}${R}message: stdout again \\${N}${R}message: stdout again |${N}${R}message: stdout again /${N}"
+    assert_sink "${R}message: ${N}${R}message: stdout /${N}${R}message: stdout -${N}${R}message: stdout again \\${N}${R}message: stdout again |${N}"
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and final sigil" {
@@ -44,7 +44,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: stdout again /${N}${R}message: OK${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: OK${N}"
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and then cleared" {
@@ -61,7 +61,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: stdout again /${N}${C}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${C}"
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and then cleared with sigil" {
@@ -78,7 +78,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: stdout again /${N}${R}message: OK${N}${C}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: OK${N}${C}"
 }
 
 @test "identical output lines still rotate the spinner" {
@@ -99,7 +99,7 @@ foo
 foo
 bar
 bar" ]
-    assert_sink "${R}message: ${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: bar -${N}${R}message: bar \\${N}${R}message: bar |${N}"
+    assert_sink "${R}message: ${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: bar -${N}${R}message: bar \\${N}"
 }
 
 @test "mixed longer output starting and ending with stdout spinning" {
@@ -127,7 +127,7 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "${R}message: ${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: second /${N}${R}message: second -${N}${R}message: third argument \\${N}${R}message: immediate fourth |${N}${R}message: immediate fourth /${N}${R}message: immediate fourth -${N}${R}message: immediate fourth \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: last -${N}${R}message: last \\${N}"
+    assert_sink "${R}message: ${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: second /${N}${R}message: second -${N}${R}message: third argument \\${N}${R}message: immediate fourth |${N}${R}message: immediate fourth /${N}${R}message: immediate fourth -${N}${R}message: immediate fourth \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: last -${N}"
 }
 
 @test "mixed longer output starting and ending with stderr spinning" {
@@ -160,5 +160,5 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: second /${N}${R}message: second -${N}${R}message: third argument \\${N}${R}message: immediate fourth |${N}${R}message: immediate fourth /${N}${R}message: immediate fourth -${N}${R}message: immediate fourth \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: last -${N}${R}message: last \\${N}${R}message: last |${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: foo /${N}${R}message: foo -${N}${R}message: foo \\${N}${R}message: foo |${N}${R}message: second /${N}${R}message: second -${N}${R}message: third argument \\${N}${R}message: immediate fourth |${N}${R}message: immediate fourth /${N}${R}message: immediate fourth -${N}${R}message: immediate fourth \\${N}${R}message: foo |${N}${R}message: foo /${N}${R}message: last -${N}${R}message: last \\${N}"
 }
