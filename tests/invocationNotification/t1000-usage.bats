@@ -9,7 +9,7 @@ assertSingleRendererMessage() {
 @test "no arguments prints message and usage instructions" {
     run invocationNotification
     [ $status -eq 2 ]
-    [ "${lines[0]}" = "ERROR: Must pass -t|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s)." ]
+    [ "${lines[0]}" = "ERROR: Must pass -o|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s)." ]
     [ "${lines[1]%% *}" = 'Usage:' ]
 }
 

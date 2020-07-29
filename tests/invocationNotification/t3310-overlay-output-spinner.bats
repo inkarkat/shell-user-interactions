@@ -13,13 +13,24 @@ load inline
 }
 
 @test "multi-line output from the command powers a spinner after the message as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stderr
 stderr again
 stdout
 stdout again" ]
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}"
+}
+
+@test "multi-line output in different order from the command powers a spinner after the message as the command runs" {
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --command "$MIXED_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "stdout
+stderr
+stdout again
+stderr again" ]
     assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}"
 }
 
@@ -44,7 +55,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command powers a spinner after the message and sigil as the command runs" {
-    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --success OK --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stderr
@@ -63,7 +74,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command powers a spinner and then cleared" {
-    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --clear all --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --clear all --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stderr
@@ -82,7 +93,7 @@ stdout again" ]
 }
 
 @test "multi-line output from the command powers a spinner and then cleared with sigil" {
-    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --clear all --success OK --command "$MIXED_COMMAND"
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner --clear all --success OK --command "$BOTH_COMMAND"
 
     [ $status -eq 0 ]
     [ "$output" = "stderr

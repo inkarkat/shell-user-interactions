@@ -53,6 +53,21 @@ assertSingleRendererMessage() {
     assertSingleRendererMessage
 }
 
+@test "use of both --inline-spinner-stderr and --inline prints message and usage instructions" {
+    run invocationMessage --message message --inline-spinner-stderr --inline
+    assertSingleRendererMessage
+}
+
+@test "use of both --inline-spinner-stderr and --spinner-stderr prints message and usage instructions" {
+    run invocationMessage --message message --inline-spinner-stderr --spinner-stderr
+    assertSingleRendererMessage
+}
+
+@test "use of both --inline-spinner-stderr and --sweep prints message and usage instructions" {
+    run invocationMessage --message message --inline-spinner-stderr --sweep
+    assertSingleRendererMessage
+}
+
 @test "use of timespan without processing of lines prints message and usage instructions" {
     run invocationMessage --message message --timespan 22
     [ $status -eq 2 ]
