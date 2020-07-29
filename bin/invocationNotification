@@ -500,9 +500,8 @@ do
 	fi
 
 	if [ "$netLine" = "$line" ]; then
-	    if [ -n "$netLine" ]; then if invokeTargetAndResetTimer "${render[$renderCount]}"; then
-		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
-		fi
+	    if [ -n "$netLine" ] && invokeTargetAndResetTimer "${render[$renderCount]}"; then
+		let renderCount=$(((renderCount + 1) % ${#render[@]}))
 	    fi
 	else
 	    invokeTargetClear "$line" ''
