@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -o|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -o|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr|--spinner-stderr-inline|--sweep-stderr-inline [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -94,6 +94,18 @@ HELPDESCRIPTION
 			Lines printed to stdout are appended as with --inline,
 			but lines printed to stderr changes a sweeping control
 			after MESSAGE / the last line like --sweep-stderr.
+    --spinner-stderr-inline
+			Lines printed to stdout are appended as with --inline,
+			but lines printed to stderr make a spinner before
+			MESSAGE / the last line rotate like --spinner-stderr.
+			Same as --inline-spinner-stderr but the spinner comes
+			first.
+    --sweep-stderr-inline
+			Lines printed to stdout are appended as with --inline,
+			but lines printed to stderr changes a sweeping control
+			before MESSAGE / the last line like --sweep-stderr.
+			Same as --inline-sweep-stderr but the sweeping control
+			comes first.
     --timespan|-t TIMESPAN[SUFFIX]
 			Only append / spin / sweep a line every TIMESPAN instead
 			of every second. Use --timespan 0 to use every line.
@@ -213,6 +225,7 @@ clear=
 isCaptureStdout=
 isInline=
 isInlineWithRender=
+isRenderBeforeInline=
 typeset -a render=()
 unset timespan
 initialDelay=0
@@ -243,12 +256,16 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
 	--inline-spinner-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+	--spinner-stderr-inline)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
 	--sweep)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
 	--inline-sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+	--sweep-stderr-inline)
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
@@ -461,7 +478,12 @@ do
 	    # As we do want to render empty lines output to stdout, we need to
 	    # explicitly filter out the final statusline output.
 	    if [ "$netLine" = "$line" ]; then
-		if invokeTargetAndResetTimer "${stdinLine}${stdinLine:+ }${render[$renderCount]}"; then
+		if [ "$isRenderBeforeInline" ]; then
+		    stdinAndRender="${render[$renderCount]}${stdinLine:+ }${stdinLine}"
+		else
+		    stdinAndRender="${stdinLine}${stdinLine:+ }${render[$renderCount]}"
+		fi
+		if invokeTargetAndResetTimer "$stdinAndRender"; then
 		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
 		fi
 	    else

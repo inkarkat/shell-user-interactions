@@ -97,6 +97,17 @@ stdout again" ]
     assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: stdout \\${N}${R}message: stdout again |${N}${R}message: OK${N}${C}"
 }
 
+
+@test "empty line output from the command also rotates the spinner" {
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-spinner-stderr --command "$WITH_EMPTY_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "foo
+bar
+
+bar" ]
+    assert_sink "${R}message: ${N}${R}message: foo /${N}${R}message: bar -${N}${R}message: \\${N}${R}message: bar |${N}${R}message: bar${N}"
+}
 @test "identical output lines still rotate the spinner" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
 ${S}echo foo;

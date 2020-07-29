@@ -67,6 +67,31 @@ assertSingleRendererMessage() {
     assertSingleRendererMessage
 }
 
+@test "use of both --inline-spinner-stderr and --inline prints message and usage instructions" {
+    run invocationNotification --to overlay --message message --inline-spinner-stderr --inline
+    assertSingleRendererMessage
+}
+
+@test "use of both --inline-spinner-stderr and --spinner-stderr prints message and usage instructions" {
+    run invocationNotification --to overlay --message message --inline-spinner-stderr --spinner-stderr
+    assertSingleRendererMessage
+}
+
+@test "use of both --spinner-stderr-inline and --spinner-stderr prints message and usage instructions" {
+    run invocationNotification --to overlay --message message --spinner-stderr-inline --spinner-stderr
+    assertSingleRendererMessage
+}
+
+@test "use of both --inline-spinner-stderr and --sweep prints message and usage instructions" {
+    run invocationNotification --to overlay --message message --inline-spinner-stderr --sweep
+    assertSingleRendererMessage
+}
+
+@test "use of both --inline-spinner-stderr and --spinner-stderr-inline prints message and usage instructions" {
+    run invocationNotification --to overlay --message message --inline-spinner-stderr --spinner-stderr-inline
+    assertSingleRendererMessage
+}
+
 @test "use of timespan without processing of lines prints message and usage instructions" {
     run invocationNotification --to overlay --message message --timespan 22
     [ $status -eq 2 ]
