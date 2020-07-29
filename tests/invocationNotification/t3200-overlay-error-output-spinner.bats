@@ -80,6 +80,13 @@ load overlay
     [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: OK${N}${C}" ]
 }
 
+@test "empty line output from the command does not rotate the spinner" {
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command "$WITH_EMPTY_ERROR_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: ${N}" ]
+}
+
 @test "multi-line error that contains the statusline marker does not rotate the spinner but clears it temporarily" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 

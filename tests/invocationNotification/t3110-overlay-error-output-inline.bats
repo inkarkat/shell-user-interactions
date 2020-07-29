@@ -59,6 +59,13 @@ load overlay
     [ "$output" = "${R}message: ${N}${R}message: from command${N}${R}message: more from command${N}${R}message: OK${N}${C}" ]
 }
 
+@test "empty line error from the command is ignored" {
+    run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command "$WITH_EMPTY_ERROR_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "${R}message: ${N}${R}message: foo${N}${R}message: bar${N}${R}message: bar${N}" ]
+}
+
 @test "multi-line error that contains the statusline marker is not individually appended" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 
