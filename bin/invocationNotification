@@ -483,9 +483,9 @@ done < <(
 	else
 	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
 	fi 4>&1 1>&2 2>&4 4>&-
-	status=${PIPESTATUS[0]}
+	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONNOTIFICATION_SYNC_DELAY:-0.01}}
-	exit $status
+	exit $commandStatus
     )
     printf '%s%d\n' "$STATUSLINE_PREFIX" "$?"
 )
