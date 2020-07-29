@@ -7,21 +7,21 @@ load overlay
     run invocationNotification --to overlay --message 'message: ' --spinner-stderr --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: /${N}" ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: ${N}" ]
 }
 
 @test "multi-line error from the command powers a spinner after the message as the command runs" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}" ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: ${N}" ]
 }
 
 @test "full spin cycle" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command 'seq 1 5 >&2'
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: /${N}" ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: /${N}${R}message: ${N}" ]
 }
 
 @test "single-line error from the command powers a spinner after the message and sigil as the command runs" {
@@ -29,6 +29,13 @@ load overlay
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: OK${N}" ]
+}
+
+@test "single-line error from the command powers a spinner after the message and ignores a fail sigil as the command runs" {
+    run invocationNotification --to overlay --message 'message: ' --spinner-stderr --fail FAIL --command "$SINGLE_LINE_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: ${N}" ]
 }
 
 @test "multi-line error from the command powers a spinner after the message and sigil as the command runs" {
@@ -43,6 +50,13 @@ load overlay
 
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: /${N}${C}" ]
+}
+
+@test "single-line error from the command powers a spinner and ignores a fail clear" {
+    run invocationNotification --to overlay --message 'message: ' --spinner-stderr --clear failure --command "$SINGLE_LINE_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: ${N}" ]
 }
 
 @test "multi-line error from the command powers a spinner and then cleared" {
@@ -66,9 +80,9 @@ load overlay
     [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: OK${N}${C}" ]
 }
 
-@test "multi-line error that contains the statusline marker does not rotate the spinner" {
+@test "multi-line error that contains the statusline marker does not rotate the spinner but clears it temporarily" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}" ]
+    [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: ${N}${R}message: -${N}${R}message: ${N}" ]
 }

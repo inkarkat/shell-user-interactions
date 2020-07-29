@@ -412,6 +412,20 @@ invokeTargetAddendum()
 	invokeTarget "$@"
     fi
 }
+invokeTargetClear()
+{
+    local status="${1##*$STATUSLINE_PREFIX}"; shift
+    local isNeedClear=t
+    # Only invoke if no sigil and no clearing happens.
+    [ -n "$successSigil" -a $status -eq 0 ] && isNeedClear=
+    [ -n "$failSigil" -a $status -ne 0 ] && isNeedClear=
+    [ "$clear" ] && [ \
+	"$clear" = all -o \
+	\( "$clear" = success -a $status -eq 0 \) -o \
+	\( "$clear" = failure -a $status -ne 0 \) \
+	] && isNeedClear=
+    [ "$isNeedClear" ] && invokeTargetAddendum "$@"
+}
 
 initialTargetStatus=
 resetTime "$timespan" "$initialDelay"
@@ -451,6 +465,7 @@ do
 		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
 		fi
 	    else
+		invokeTargetClear "$line" "$stdinLine"
 		statusLine="$line"
 	    fi
 	    continue
@@ -462,10 +477,13 @@ do
 	    fi
 	fi
 
-	if [ -n "$netLine" ]; then
-	    if invokeTargetAndResetTimer "${render[$renderCount]}"; then
-		let renderCount=$(((renderCount + 1) % ${#render[@]}))
+	if [ "$netLine" = "$line" ]; then
+	    if [ -n "$netLine" ]; then if invokeTargetAndResetTimer "${render[$renderCount]}"; then
+		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		fi
 	    fi
+	else
+	    invokeTargetClear "$line" ''
 	fi
     else
 	# To avoid printing the last (exit status) line, buffer one line and

@@ -9,7 +9,7 @@ load inline
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: ${N}"
 }
 
 @test "multi-line output from the command powers a spinner after the message as the command runs" {
@@ -20,7 +20,7 @@ load inline
 stderr again
 stdout
 stdout again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: ${N}"
 }
 
 @test "multi-line output in different order from the command powers a spinner after the message as the command runs" {
@@ -31,7 +31,7 @@ stdout again" ]
 stderr
 stdout again
 stderr again" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: ${N}"
 }
 
 @test "full spin cycle" {
@@ -43,7 +43,7 @@ stderr again" ]
 3
 4
 5" ]
-    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: /${N}"
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: /${N}${R}message: ${N}"
 }
 
 @test "single-line output from the command powers a spinner after the message and sigil as the command runs" {
@@ -52,6 +52,14 @@ stderr again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
     assert_sink "${R}message: ${N}${R}message: /${N}${R}message: OK${N}"
+}
+
+@test "single-line output from the command powers a spinner after the message and ignores a fail sigil as the command runs" {
+    run invocationNotification --to overlay --message 'message: ' --spinner --fail FAIL --command "$ECHO_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "stdout" ]
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: ${N}"
 }
 
 @test "multi-line output from the command powers a spinner after the message and sigil as the command runs" {
@@ -71,6 +79,14 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
     assert_sink "${R}message: ${N}${R}message: /${N}${C}"
+}
+
+@test "single-line output from the command powers a spinner and ignores a fail clear" {
+    run invocationNotification --to overlay --message 'message: ' --spinner --clear failure --command "$ECHO_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "stdout" ]
+    assert_sink "${R}message: ${N}${R}message: /${N}${R}message: ${N}"
 }
 
 @test "multi-line output from the command powers a spinner and then cleared" {

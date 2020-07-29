@@ -7,5 +7,5 @@ load overlay
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --sweep-stderr --command 'seq 1 9 >&2'
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: [ -* ]${N}${R}message: [  -*]${N}${R}message: [   *]${N}${R}message: [  *-]${N}${R}message: [ *- ]${N}${R}message: [*-  ]${N}${R}message: [*   ]${N}" ]
+    [ "$output" = "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: [ -* ]${N}${R}message: [  -*]${N}${R}message: [   *]${N}${R}message: [  *-]${N}${R}message: [ *- ]${N}${R}message: [*-  ]${N}${R}message: [*   ]${N}${R}message: ${N}" ]
 }
