@@ -2,6 +2,7 @@
 shopt -qs extglob
 
 : ${INVOCATIONNOTIFICATION_MESSAGE_MARKER:='{}'}
+messageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICATION_MESSAGE_MARKER
 : ${INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY=1}
 typeset -a SPINNER=(/ - \\ \|)
@@ -43,7 +44,7 @@ HELPDESCRIPTION
     --to|-o title	Report in the terminal's window title via ANSI escape
 			sequences.
     --to|-o command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE
-			while replacing $INVOCATIONNOTIFICATION_MESSAGE_MARKER with the message.
+			while replacing $messageMarker with the message.
     --to|-o notify	Report via notify-send to the system's notification
 			system.
     --message|-m MESSAGE
@@ -183,12 +184,8 @@ commandTarget()
     [ $commandStatus -eq 0 ] || return $commandStatus
 
     local quotedArgument=; [ $# -gt 0 ] && printf -v quotedArgument %q "${message}$1"
-    local saveInvocationNotificationMessageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICATION_MESSAGE_MARKER
-
-    eval "${INVOCATIONNOTIFICATION_COMMANDLINE//"$saveInvocationNotificationMessageMarker"/$quotedArgument}"
+    eval "${INVOCATIONNOTIFICATION_COMMANDLINE//"$messageMarker"/$quotedArgument}"
     commandStatus=$?
-
-    INVOCATIONNOTIFICATION_MESSAGE_MARKER="$saveInvocationNotificationMessageMarker"
     return $commandStatus
 }
 notifyTarget()
