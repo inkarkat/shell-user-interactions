@@ -227,8 +227,21 @@ elif [ ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
 fi >&2
-: ${timespan:=1}
 
+isTerminalOk=t
+printfToTerminal()
+{
+    [ "$isTerminalOk" ] || return 1
+
+    # Print directly to terminal, even if stdout is redirected, ignoring a
+    # non-existing terminal.
+    if ! { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
+}
+
+: ${timespan:=1}
 case "${timespan}:${initialDelay}" in
     *.*)
 	: ${DATE:=date}
@@ -286,18 +299,6 @@ case "${timespan}:${initialDelay}" in
 	;;
 esac
 
-isTerminalOk=t
-printfToTerminal()
-{
-    [ "$isTerminalOk" ] || return 1
-
-    # Print directly to terminal, even if stdout is redirected, ignoring a
-    # non-existing terminal.
-    if ! { printf "$@" >> "${INVOCATIONMESSAGE_SINK:-/dev/tty}"; } 2>/dev/null; then
-	isTerminalOk=
-	return 1
-    fi
-}
 nonExpiryExitStatus=1
 printMessageRaw()
 {
