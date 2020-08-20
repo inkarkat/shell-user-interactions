@@ -16,3 +16,11 @@ export INVOCATIONMESSAGE_SINK=/cannot/writeTo
     [ $status -eq 1 ]
     [ "$output" = "" ]
 }
+
+@test "when not being able to write the message to the terminal with --or-passthrough, commands just run and 0 is returned" {
+    run invocationMessage --or-passthrough --message 'message: ' --clear all --command 'echo commandline' echo simplecommand
+
+    [ $status -eq 0 ]
+    [ "$output" = "commandline
+simplecommand" ]
+}

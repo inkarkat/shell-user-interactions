@@ -10,7 +10,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -38,6 +38,9 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     cat <<HELPTEXT
+    --or-passthrough	When not connected to a terminal, omit MESSAGE,
+			SIGIL(s), and any inlining or rendering. Basically, just
+			execute COMMAND(s) without interfering in any way.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
     --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
@@ -111,7 +114,7 @@ EXIT STATUS:
     0	Complete success.
     1	Failed to write to the terminal.
     2	Bad invocation, wrong or missing command-line arguments.
-    *   any exit status from COMMANDS
+    *   any exit status from COMMAND(s)
 
 Example:
 HELPTEXT
@@ -146,6 +149,7 @@ fi
 : ${SAVE_CURSOR_POSITION=[s}
 : ${RESTORE_CURSOR_POSITION=[u}
 : ${ERASE_TO_END=[0J}
+isPassthroughIfNoTerminal=
 unset message
 successSigil=
 failSigil=
@@ -162,6 +166,8 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--or-passthrough)
+			shift; isPassthroughIfNoTerminal=t;;
 	--message|-m)	shift; message="$1"; shift;;
 	--success)	shift; successSigil="$1"; shift;;
 	--fail)		shift; failSigil="$1"; shift;;
@@ -240,6 +246,15 @@ printfToTerminal()
 	return 1
     fi
 }
+
+if [ "$isPassthroughIfNoTerminal" ] && ! printfToTerminal ''; then
+    if [ "$isNeedEval" ]; then
+	eval "${commands[@]}"
+    else
+	"${commands[@]}"
+    fi
+    exit $?
+fi
 
 : ${timespan:=1}
 case "${timespan}:${initialDelay}" in
