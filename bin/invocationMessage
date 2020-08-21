@@ -470,7 +470,17 @@ while $reader
 do
     if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
 	if [ "$isInline" ]; then
-	    :
+	    renderedDuration="$(secondsToDuration "$duration")"
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    if [ "$isFirst" ]; then
+		if [ "$clear" ]; then
+		    printDuration %s "${renderedDuration}${netLine:+ }$netLine"
+		else
+		    printDuration %s "${SAVE_CURSOR_POSITION}${renderedDuration}${netLine:+ }$netLine"
+		fi && isFirst=
+	    else
+		printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${renderedDuration}${netLine:+ }$netLine"
+	    fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	elif [ "${#render[@]}" -gt 0 ]; then
 	    :
 	else
