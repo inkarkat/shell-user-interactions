@@ -3,6 +3,8 @@ shopt -qs extglob
 
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
+: ${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX=(}
+: ${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX=) }
 typeset -a SPINNER=(/ - \\ \| '')
 typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
 
@@ -474,12 +476,12 @@ do
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
-		    printDuration %s "${renderedDuration}${netLine:+ }$netLine"
+		    printDuration %s "${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		else
-		    printDuration %s "${SAVE_CURSOR_POSITION}${renderedDuration}${netLine:+ }$netLine"
+		    printDuration %s "${SAVE_CURSOR_POSITION}${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		fi && isFirst=
 	    else
-		printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${renderedDuration}${netLine:+ }$netLine"
+		printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 	    fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	elif [ "${#render[@]}" -gt 0 ]; then
 	    :
