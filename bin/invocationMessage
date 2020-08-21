@@ -5,6 +5,8 @@ shopt -qs extglob
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
 : ${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX=(}
 : ${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX=) }
+: ${INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX= (}
+: ${INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX=)}
 typeset -a SPINNER=(/ - \\ \| '')
 typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
 
@@ -594,13 +596,13 @@ if [ -n "$timer" ]; then
 fi
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$successSigil" "${renderedDuration:+ (}${renderedDuration}${renderedDuration:+)}" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$successSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$failSigil" "${renderedDuration:+ (}${renderedDuration}${renderedDuration:+)}" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$failSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
