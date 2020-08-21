@@ -45,3 +45,11 @@ fifth" ]
     [ $status -eq 0 ]
     [ "$output" = "message: 4s${ERASE_TO_END}OK (5s)" ]
 }
+
+@test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {
+    export INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX='' INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX=''
+    run invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
+
+    [ $status -eq 0 ]
+    [ "$output" = "message: 4s${ERASE_TO_END}OK" ]
+}
