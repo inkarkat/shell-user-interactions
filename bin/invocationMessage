@@ -552,8 +552,8 @@ do
 }$line"
 	    [ -n "$timer" -a "$lastDuration" != "$duration" ] && handlePlainDurationUpdate
 	fi
-	statusLine="$line"
     fi
+    statusLine="$line"
 done < <(
     (
 	if [ "$isNeedEval" ]; then
