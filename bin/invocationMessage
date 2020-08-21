@@ -332,8 +332,9 @@ case "${timespan}:${initialDelay}${timer:+.}" in
 esac
 
 line=
-duration=
-lastDuration=
+duration=0
+lastDuration=0
+lastRenderedDuration=
 defaultReader()
 {
     IFS=$'\n' read -r line
@@ -342,7 +343,6 @@ heldChars=''
 timeoutReader()
 {
     local char remainingLine status
-    duration=''
     if IFS=$'\n' read -t 2 -n 1 -r char; then
 	if IFS=$'\n' read -r remainingLine; then
 	    line="${heldChars}${char}$remainingLine"
@@ -352,7 +352,7 @@ timeoutReader()
 	    return 1
 	fi
     elif [ $? -gt 128 ]; then
-	duration="$(secondsToDuration $SECONDS)"
+	duration=$SECONDS
     else
 	line=''
 	return 1
@@ -447,16 +447,17 @@ teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then te
 exec 4>&1 1>&2 2>&4 4>&-
 while $reader
 do
-    if [ -n "$duration" ]; then
+    if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
 	if [ "$isInline" ]; then
 	    :
 	elif [ "${#render[@]}" -gt 0 ]; then
 	    :
 	else
-	    printDuration %s "${lastDuration//?/}${duration}${ERASE_TO_END}"
-	    sigilPrefix="${duration//?/}${ERASE_TO_END}"
+	    renderedDuration="$(secondsToDuration "$duration")"
+	    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
+	    sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
 	    lastDuration="$duration"
-	    duration=''
+	    lastRenderedDuration="$renderedDuration"
 	fi
     else
 	if [ "$isInline" ]; then
