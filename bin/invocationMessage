@@ -422,6 +422,13 @@ secondsToDuration()
     [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="$seconds"
     printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
 }
+handlePlainDurationUpdate()
+{
+    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
+    sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
+    lastDuration="$duration"
+    lastRenderedDuration="$renderedDuration"
+}
 
 initialPrintStatus=
 resetTime "$timespan" "$initialDelay"
@@ -454,10 +461,7 @@ do
 	    :
 	else
 	    renderedDuration="$(secondsToDuration "$duration")"
-	    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
-	    sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
-	    lastDuration="$duration"
-	    lastRenderedDuration="$renderedDuration"
+	    handlePlainDurationUpdate
 	fi
     else
 	if [ -n "$timer" ]; then
@@ -532,12 +536,7 @@ do
 	else
 	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
-	    if [ -n "$timer" -a "$lastDuration" != "$duration" ]; then
-		printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
-		sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
-		lastDuration="$duration"
-		lastRenderedDuration="$renderedDuration"
-	    fi
+	    [ -n "$timer" -a "$lastDuration" != "$duration" ] && handlePlainDurationUpdate
 	fi
 	statusLine="$line"
     fi
