@@ -438,7 +438,7 @@ secondsToDuration()
 }
 handlePlainDurationUpdate()
 {
-    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
+    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}" || return
     sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
     lastDuration="$duration"
     lastRenderedDuration="$renderedDuration"
