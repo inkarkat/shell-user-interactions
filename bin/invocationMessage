@@ -104,10 +104,10 @@ HELPDESCRIPTION
 			days.
     --initial-delay|-T TIMESPAN[SUFFIX]
 			Wait for TIMESPAN before printing the message or
-			appending / spinning / sweeping based on a line. By
-			default, the message is printed immediately. If COMMAND
-			finishes earlier, no message (and SIGIL) get printed at
-			all.
+			appending / spinning / sweeping based on a line, or
+			printing the first total running time. By default, the
+			message is printed immediately. If COMMAND finishes
+			earlier, no message (and SIGIL) get printed at all.
     --timer INTERVAL[SUFFIX]
 			Append the COMMAND's total running time after MESSAGE
 			every INTERVAL. This provides some form of feedback if
@@ -333,6 +333,7 @@ esac
 
 line=
 duration=
+lastDuration=
 defaultReader()
 {
     IFS=$'\n' read -r line
@@ -351,7 +352,7 @@ timeoutReader()
 	    return 1
 	fi
     elif [ $? -gt 128 ]; then
-	duration=$SECONDS
+	duration="$(secondsToDuration $SECONDS)"
     else
 	line=''
 	return 1
@@ -391,6 +392,36 @@ printMessageAddendum()
 	printMessage "$@"
     fi
 }
+printDuration()
+{
+    if [ "$hasPrintedMessage" ]; then
+	# Initial delay has already passed, do the update without considering
+	# timeout expiry.
+	printfToTerminal "$@"
+    else
+	printMessage "$@"
+    fi
+}
+secondsToDuration()
+{
+    local seconds="${1:?}"; shift
+    local weeks=$((seconds / 604800))
+    seconds=$((seconds - 604800 * weeks))
+    local days=$((seconds / 86400))
+    seconds=$((seconds - 86400 * days))
+    local hours=$((seconds / 3600))
+    seconds=$((seconds - 3600 * hours))
+    local minutes=$((seconds / 60))
+    seconds=$((seconds - (60 * minutes)))
+
+    local renderedWeeks renderedDays renderedHours renderedMinutes renderedSeconds
+    [ $weeks -gt 0 ] && renderedWeeks="${weeks}w "
+    [ $days -gt 0 ] && renderedDays="${days}d "
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 ] && printf -v renderedHours %02d: "$hours"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedMinutes %02d: "$minutes"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="$seconds"
+    printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
+}
 
 initialPrintStatus=
 resetTime "$timespan" "$initialDelay"
@@ -417,7 +448,16 @@ exec 4>&1 1>&2 2>&4 4>&-
 while $reader
 do
     if [ -n "$duration" ]; then
-	printMessageRaw %s "$duration"
+	if [ "$isInline" ]; then
+	    :
+	elif [ "${#render[@]}" -gt 0 ]; then
+	    :
+	else
+	    printDuration %s "${lastDuration//?/}${duration}${ERASE_TO_END}"
+	    sigilPrefix="${duration//?/}${ERASE_TO_END}"
+	    lastDuration="$duration"
+	    duration=''
+	fi
     else
 	if [ "$isInline" ]; then
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
