@@ -460,6 +460,13 @@ do
 	    lastRenderedDuration="$renderedDuration"
 	fi
     else
+	if [ -n "$timer" ]; then
+	    if [ $((SECONDS - lastDuration)) -ge $timer ]; then
+		duration=$SECONDS
+		renderedDuration="$(secondsToDuration "$duration")"
+	    fi
+	fi
+
 	if [ "$isInline" ]; then
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ -n "$netLine" ]; then
@@ -525,6 +532,12 @@ do
 	else
 	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
+	    if [ -n "$timer" -a "$lastDuration" != "$duration" ]; then
+		printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"
+		sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
+		lastDuration="$duration"
+		lastRenderedDuration="$renderedDuration"
+	    fi
 	fi
 	statusLine="$line"
     fi
