@@ -74,3 +74,21 @@ assertSingleRendererMessage() {
     [ "${lines[0]}" = "ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr]." ]
     [ "${lines[1]%% *}" = 'Usage:' ]
 }
+
+@test "invalid timespan prints message" {
+    run invocationMessage --message message --timespan 42x --spinner-stderr
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Illegal timespan: 42x" ]
+}
+
+@test "invalid timer interval prints message" {
+    run invocationMessage --message message --timer 42x
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Illegal interval: 42x" ]
+}
+
+@test "millisecond timer interval prints message" {
+    run invocationMessage --message message --timer 42ms
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Fractional seconds not allowed for interval." ]
+}

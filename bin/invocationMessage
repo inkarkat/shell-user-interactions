@@ -132,12 +132,17 @@ HELPTEXT
 timeToSeconds()
 {
     case "$1" in
-	+([0-9])ms)	time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}";;
+	+([0-9])ms)	if [ "$3" ]; then
+			    echo >&2 "ERROR: Fractional seconds not allowed for ${2:-timespan}."; exit 2
+			else
+			    time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}"
+			fi
+			;;
 	+([0-9])?(s))   time="${1%s}";;
 	+([0-9])m)	time=$((${1%m} * 60));;
 	+([0-9])h)	time=$((${1%h} * 3600));;
 	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 "ERROR: Illegal timespan: %s\\n" "$1"; exit 2;;
+	*)		printf >&2 "ERROR: Illegal ${2:-timespan}: %s\\n" "$1"; exit 2;;
     esac
     printf %s "$time"
 }
@@ -208,8 +213,8 @@ do
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
-	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1")" || exit $?; shift; SECONDS=0;;
-	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1")" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
+	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0;;
+	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
