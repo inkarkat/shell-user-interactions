@@ -439,7 +439,7 @@ secondsToDuration()
 handlePlainDurationUpdate()
 {
     printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}" || return
-    sigilPrefix="${renderedDuration//?/}${renderedDuration:+ERASE_TO_END}"
+    sigilPrefix="${renderedDuration//?/}${renderedDuration:+$ERASE_TO_END}"
     lastDuration="$duration"
     lastRenderedDuration="$renderedDuration"
 }
@@ -587,15 +587,18 @@ case "$commandErrorOutput" in
 esac
 
 hasSigil=
+if [ -n "$timer" ]; then
+    renderedDuration="$(secondsToDuration "$SECONDS")"
+fi
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$successSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$successSigil" "${renderedDuration:+ (}${renderedDuration}${renderedDuration:+)}" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$failSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$failSigil" "${renderedDuration:+ (}${renderedDuration}${renderedDuration:+)}" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac

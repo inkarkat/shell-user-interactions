@@ -38,3 +38,10 @@ fifth" ]
     [ $status -eq 0 ]
     [ "$output" = "message: 4" ]
 }
+
+@test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
+    run invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
+
+    [ $status -eq 0 ]
+    [ "$output" = "message: 4${ERASE_TO_END}OK (5)" ]
+}
