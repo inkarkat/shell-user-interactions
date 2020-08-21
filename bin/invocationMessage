@@ -348,20 +348,29 @@ heldChars=''
 timeoutReader()
 {
     local char remainingLine status
-    if IFS=$'\n' read -t 2 -n 1 -r char; then
-	if IFS=$'\n' read -r remainingLine; then
-	    line="${heldChars}${char}$remainingLine"
+    while :
+    do
+	if IFS=$'\n' read -t 2 -n 1 -r char; then
+	    if [ -z "$char" ]; then
+		line="${heldChars}"
+		heldChars=''
+		return 0
+	    else
+		heldChars="${heldChars}$char"
+		continue
+	    fi
+	elif [ $? -gt 128 ]; then
+	    duration=$SECONDS
+	    return 0
+	elif [ -n "$heldChars" ]; then
+	    line="$heldChars"
 	    heldChars=''
+	    return 0
 	else
-	    heldChars="${heldChars}$char"
+	    line=''
 	    return 1
 	fi
-    elif [ $? -gt 128 ]; then
-	duration=$SECONDS
-    else
-	line=''
-	return 1
-    fi
+    done
 }
 
 nonExpiryExitStatus=1
