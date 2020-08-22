@@ -92,3 +92,10 @@ assertSingleRendererMessage() {
     [ $status -eq 2 ]
     [ "$output" = "ERROR: Fractional seconds not allowed for interval." ]
 }
+
+@test "use of render timer without rendering prints message and usage instructions" {
+    run invocationMessage --message message --render-timer 1 --inline
+    [ $status -eq 2 ]
+    [ "${lines[0]}" = "ERROR: --render-timer can only be used in combination with --spinner[-stderr] or --sweep[-stderr]." ]
+    [ "${lines[1]%% *}" = 'Usage:' ]
+}

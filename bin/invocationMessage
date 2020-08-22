@@ -251,6 +251,11 @@ elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; the
     echo
     printShortUsage "$0"
     exit 2
+elif [ "$isRenderTimer" ] && [ ${#render[@]} -eq 0 ]; then
+    echo 'ERROR: --render-timer can only be used in combination with --spinner[-stderr] or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
+    exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
