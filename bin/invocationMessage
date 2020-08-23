@@ -362,7 +362,7 @@ timeoutReader()
     local char
     while :
     do
-	if IFS=$'\n' read -t 2 -n 1 -r char; then
+	if IFS=$'\n' read -t "$timer" -n 1 -r char; then
 	    if [ -z "$char" ]; then
 		line="${heldChars}"
 		heldChars=''
