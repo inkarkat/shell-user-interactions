@@ -3,6 +3,12 @@ shopt -qs extglob
 
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
+: ${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX=(}
+: ${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX=) }
+: ${INVOCATIONMESSAGE_TIMER_RENDER_PREFIX=(}
+: ${INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX=) }
+: ${INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX= (}
+: ${INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX=)}
 typeset -a SPINNER=(/ - \\ \| '')
 typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
 
@@ -10,7 +16,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]|--render-timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -104,10 +110,18 @@ HELPDESCRIPTION
 			days.
     --initial-delay|-T TIMESPAN[SUFFIX]
 			Wait for TIMESPAN before printing the message or
-			appending / spinning / sweeping based on a line. By
-			default, the message is printed immediately. If COMMAND
-			finishes earlier, no message (and SIGIL) get printed at
-			all.
+			appending / spinning / sweeping based on a line, or
+			printing the first total running time. By default, the
+			message is printed immediately. If COMMAND finishes
+			earlier, no message (and SIGIL) get printed at all.
+    --timer INTERVAL[SUFFIX]
+			Append the COMMAND's total running time after MESSAGE
+			every INTERVAL. This provides some form of feedback if
+			COMMAND does not (or not often) provide output.
+    --render-timer INTERVAL[SUFFIX]
+			Rotate the spinner / change the sweeping control every
+			INTERVAL. This provides some form of feedback if COMMAND
+			does not (or not often) provide output.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -124,12 +138,17 @@ HELPTEXT
 timeToSeconds()
 {
     case "$1" in
-	+([0-9])ms)	time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}";;
+	+([0-9])ms)	if [ "$3" ]; then
+			    echo >&2 "ERROR: Fractional seconds not allowed for ${2:-timespan}."; exit 2
+			else
+			    time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}"
+			fi
+			;;
 	+([0-9])?(s))   time="${1%s}";;
 	+([0-9])m)	time=$((${1%m} * 60));;
 	+([0-9])h)	time=$((${1%h} * 3600));;
 	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 "ERROR: Illegal timespan: %s\\n" "$1"; exit 2;;
+	*)		printf >&2 "ERROR: Illegal ${2:-timespan}: %s\\n" "$1"; exit 2;;
     esac
     printf %s "$time"
 }
@@ -160,6 +179,10 @@ isInlineWithRender=
 typeset -a render=()
 unset timespan
 initialDelay=0
+reader=defaultReader
+timer=
+isTimer=
+isRenderTimer=
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -197,6 +220,8 @@ do
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
+	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isTimer=t;;
+	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -229,6 +254,11 @@ elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; the
     echo
     printShortUsage "$0"
     exit 2
+elif [ "$isRenderTimer" ] && [ ${#render[@]} -eq 0 ]; then
+    echo 'ERROR: --render-timer can only be used in combination with --spinner[-stderr] or --sweep[-stderr].'
+    echo
+    printShortUsage "$0"
+    exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
@@ -257,7 +287,21 @@ if [ "$isPassthroughIfNoTerminal" ] && ! printfToTerminal ''; then
 fi
 
 : ${timespan:=1}
-case "${timespan}:${initialDelay}" in
+# If the timer is used, reserve use of SECONDS for that (as we can easily (but a
+# bit more slowly) use external date for the timespan and initial delay), as
+# timing interval likely will fire more often than the (likely infrequent)
+# output.
+case "${timespan}:${initialDelay}${timer:+.}" in
+    0:0?(.))
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
     *.*)
 	: ${DATE:=date}
 
@@ -288,16 +332,6 @@ case "${timespan}:${initialDelay}" in
 		;;
 	esac
 	;;
-    0:0)
-	resetTime()
-	{
-	    :
-	}
-	isExpired()
-	{
-	    :
-	}
-	;;
     *)
 	resetTime()
 	{
@@ -313,6 +347,43 @@ case "${timespan}:${initialDelay}" in
 	}
 	;;
 esac
+
+line=
+duration=0
+lastDuration=0
+lastRenderedDuration=
+defaultReader()
+{
+    IFS=$'\n' read -r line
+}
+heldChars=''
+timeoutReader()
+{
+    local char remainingLine status
+    while :
+    do
+	if IFS=$'\n' read -t 2 -n 1 -r char; then
+	    if [ -z "$char" ]; then
+		line="${heldChars}"
+		heldChars=''
+		return 0
+	    else
+		heldChars="${heldChars}$char"
+		continue
+	    fi
+	elif [ $? -gt 128 ]; then
+	    duration=$SECONDS
+	    return 0
+	elif [ -n "$heldChars" ]; then
+	    line="$heldChars"
+	    heldChars=''
+	    return 0
+	else
+	    line=''
+	    return 1
+	fi
+    done
+}
 
 nonExpiryExitStatus=1
 printMessageRaw()
@@ -347,6 +418,43 @@ printMessageAddendum()
 	printMessage "$@"
     fi
 }
+printDuration()
+{
+    if [ "$hasPrintedMessage" ]; then
+	# Initial delay has already passed, do the update without considering
+	# timeout expiry.
+	printfToTerminal "$@"
+    else
+	printMessage "$@"
+    fi
+}
+secondsToDuration()
+{
+    local seconds="${1:?}"; shift
+    local weeks=$((seconds / 604800))
+    seconds=$((seconds - 604800 * weeks))
+    local days=$((seconds / 86400))
+    seconds=$((seconds - 86400 * days))
+    local hours=$((seconds / 3600))
+    seconds=$((seconds - 3600 * hours))
+    local minutes=$((seconds / 60))
+    seconds=$((seconds - (60 * minutes)))
+
+    local renderedWeeks renderedDays renderedHours renderedMinutes renderedSeconds
+    [ $weeks -gt 0 ] && renderedWeeks="${weeks}w "
+    [ $days -gt 0 ] && renderedDays="${days}d "
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 ] && printf -v renderedHours %02d: "$hours"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedMinutes %02d: "$minutes"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="${seconds}s"
+    printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
+}
+handlePlainDurationUpdate()
+{
+    printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}" || return
+    sigilPrefix="${renderedDuration//?/}${renderedDuration:+$ERASE_TO_END}"
+    lastDuration="$duration"
+    lastRenderedDuration="$renderedDuration"
+}
 
 initialPrintStatus=
 resetTime "$timespan" "$initialDelay"
@@ -370,73 +478,129 @@ let renderCount=0
 commandErrorOutput=
 teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
 exec 4>&1 1>&2 2>&4 4>&-
-while IFS=$'\n' read -r line
+while $reader
 do
-    if [ "$isInline" ]; then
-	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	if [ -n "$netLine" ]; then
+    if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
+	if [ "$isInline" ]; then
+	    renderedDuration="$(secondsToDuration "$duration")"
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
-		    printMessageAndResetTimer %s "$netLine"
+		    printDuration %s "${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		else
-		    printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}$netLine"
+		    printDuration %s "${SAVE_CURSOR_POSITION}${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		fi && isFirst=
 	    else
-		printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 	    fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
-	fi
-    elif [ "${#render[@]}" -gt 0 ]; then
-	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	if [ "$isInlineWithRender" ]; then
-	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
-	    if [ "$stderrLine" != "$netLine" ]; then
-		stdinLine="${netLine#*${STDIN_START}}"
-		stdinLine="${stdinLine%%${STDIN_END}*}"
-		if [ "$stdinLine" != "$previousStdinLine" ]; then
-		    netLine="${stdinLine}${stdinLine:+ }"
-		    if if [ "$isFirstStdinLine" ]; then
-			undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
-			if [ "$clear" ]; then
-			    printMessageAndResetTimer %s "$undoRender" "$netLine" "${render[$renderCount]}"
-			else
-			    printMessageAndResetTimer %s "$undoRender" "${SAVE_CURSOR_POSITION}$netLine" "${render[$renderCount]}"
-			fi && { isFirstStdinLine=; isFirst=; }
+	elif [ "${#render[@]}" -gt 0 ]; then
+	    [ "$isTimer" ] && renderedDuration="$(secondsToDuration "$duration")" || renderedDuration=''
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    netLine="${netLine}${netLine:+ }"
+	    if if [ -z "$renderedDuration" ] && [ "$isFirstStdinLine" ]; then
+		    undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
+		    if [ "$clear" ]; then
+			printDuration %s "$undoRender" "$netLine" "${render[$renderCount]}"
 		    else
-			printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine" "${render[$renderCount]}"
-		    fi; then
-		    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
-		    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
-		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
-		    fi
-
-		    previousStdinLine="$stdinLine"
-		    statusLine="$line"
-		    continue
-		fi  # else (the stdinLine has not changed) fall through to the plain rendering below.
-	    fi
-	elif [ "$isCaptureStdout" ]; then
-	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
-	    if [ -n "$stderrLine" ]; then
-		commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
-}$stderrLine"
-		netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
-	    fi
-	fi
-
-	if [ -n "$netLine" ]; then
-	    if if [ "$isFirst" ]; then
-		    printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
+			printDuration %s "$undoRender" "${SAVE_CURSOR_POSITION}$netLine" "${render[$renderCount]}"
+		    fi && { isFirstStdinLine=; isFirst=; }
+		elif [ "$isFirstStdinLine" ]; then
+		    undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
+		    if [ "$clear" ]; then
+			printDuration %s "${undoRender}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX}$netLine" "${render[$renderCount]}"
+		    else
+			printDuration %s "${undoRender}${SAVE_CURSOR_POSITION}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX}$netLine" "${render[$renderCount]}"
+		    fi && isFirstStdinLine=
 		else
-		    printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
+		    printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX}$netLine" "${render[$renderCount]}"
 		fi; then
-		let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
-		: ${sigilPrefix:="${render[-1]}"}   # Only set when not yet initialized by inline-with-render algorithm above.
+		sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
+		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 		nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 	    fi
+
+	    previousStdinLine="$stdinLine"
+	    statusLine="$line"
+	    continue
+	else
+	    renderedDuration="$(secondsToDuration "$duration")"
+	    handlePlainDurationUpdate
 	fi
     else
-	commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
+	if [ -n "$timer" ]; then
+	    if [ $((SECONDS - lastDuration)) -ge $timer ]; then
+		duration=$SECONDS
+		renderedDuration="$(secondsToDuration "$duration")"
+	    fi
+	fi
+
+	if [ "$isInline" ]; then
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    if [ -n "$netLine" ]; then
+		if [ "$isFirst" ]; then
+		    if [ "$clear" ]; then
+			printMessageAndResetTimer %s "$netLine"
+		    else
+			printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}$netLine"
+		    fi && isFirst=
+		else
+		    printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
+	    fi
+	elif [ "${#render[@]}" -gt 0 ]; then
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    if [ "$isInlineWithRender" ]; then
+		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+		if [ "$stderrLine" != "$netLine" ]; then
+		    stdinLine="${netLine#*${STDIN_START}}"
+		    stdinLine="${stdinLine%%${STDIN_END}*}"
+		    if [ "$stdinLine" != "$previousStdinLine" ]; then
+			netLine="${stdinLine}${stdinLine:+ }"
+			if if [ "$isFirstStdinLine" ]; then
+				undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
+				if [ "$clear" ]; then
+				    printMessageAndResetTimer %s "$undoRender" "$netLine" "${render[$renderCount]}"
+				else
+				    printMessageAndResetTimer %s "$undoRender" "${SAVE_CURSOR_POSITION}$netLine" "${render[$renderCount]}"
+				fi && { isFirstStdinLine=; isFirst=; }
+			    else
+				printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine" "${render[$renderCount]}"
+			    fi; then
+			    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
+			    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+			    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+			fi
+
+			previousStdinLine="$stdinLine"
+			statusLine="$line"
+			continue
+		    fi  # else (the stdinLine has not changed) fall through to the plain rendering below.
+		fi
+	    elif [ "$isCaptureStdout" ]; then
+		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+		if [ -n "$stderrLine" ]; then
+		    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
+}$stderrLine"
+		    netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
+		fi
+	    fi
+
+	    if [ -n "$netLine" ]; then
+		if if [ "$isFirst" ]; then
+			printMessageAndResetTimer %s "${render[$renderCount]}" && isFirst=
+		    else
+			printMessageAndResetTimer %s "${render[-1]}${render[$renderCount]}"
+		    fi; then
+		    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		    : ${sigilPrefix:="${render[-1]}"}   # Only set when not yet initialized by inline-with-render algorithm above.
+		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+		fi
+	    fi
+	else
+	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
+	    [ -n "$timer" -a "$lastDuration" != "$duration" ] && handlePlainDurationUpdate
+	fi
     fi
     statusLine="$line"
 done < <(
@@ -462,15 +626,20 @@ case "$commandErrorOutput" in
 esac
 
 hasSigil=
+if [ -n "$timer" ]; then
+    [ -n "${INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" ] &&
+	renderedDuration="$(secondsToDuration "$SECONDS")" ||
+	renderedDuration=''
+fi
 if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$successSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$successSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
 	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
-    printMessageAddendum %s "$sigilPrefix" "$failSigil" || status=1
+    printMessageAddendum %s "$sigilPrefix" "$failSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
 	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
