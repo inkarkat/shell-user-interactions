@@ -448,12 +448,19 @@ secondsToDuration()
     [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="${seconds}s"
     printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
 }
+renderedDuration=
+renderDuration()
+{
+    renderedDuration="$(secondsToDuration "$duration")"
+    lastDuration=$duration
+    lastRenderedDuration="$renderedDuration"
+}
 handlePlainDurationUpdate()
 {
+    local lastRenderedDuration="$lastRenderedDuration"
+    renderDuration
     printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}" || return
     sigilPrefix="${renderedDuration//?/}${renderedDuration:+$ERASE_TO_END}"
-    lastDuration="$duration"
-    lastRenderedDuration="$renderedDuration"
 }
 
 initialPrintStatus=
@@ -482,7 +489,7 @@ while $reader
 do
     if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
 	if [ "$isInline" ]; then
-	    renderedDuration="$(secondsToDuration "$duration")"
+	    renderDuration
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ "$isFirst" ]; then
 		if [ "$clear" ]; then
@@ -494,7 +501,7 @@ do
 		printDuration %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 	    fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	elif [ "${#render[@]}" -gt 0 ]; then
-	    [ "$isTimer" ] && renderedDuration="$(secondsToDuration "$duration")" || renderedDuration=''
+	    [ "$isTimer" ] && renderDuration || renderedDuration=''
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    netLine="${netLine}${netLine:+ }"
 	    if if [ -z "$renderedDuration" ] && [ "$isFirstStdinLine" ]; then
@@ -523,7 +530,6 @@ do
 	    statusLine="$line"
 	    continue
 	else
-	    renderedDuration="$(secondsToDuration "$duration")"
 	    handlePlainDurationUpdate
 	fi
     else
