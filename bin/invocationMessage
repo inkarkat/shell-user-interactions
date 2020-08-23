@@ -359,7 +359,7 @@ defaultReader()
 heldChars=''
 timeoutReader()
 {
-    local char remainingLine status
+    local char
     while :
     do
 	if IFS=$'\n' read -t 2 -n 1 -r char; then
