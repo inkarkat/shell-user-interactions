@@ -543,12 +543,12 @@ do
 	    if [ -n "$netLine" ]; then
 		if [ "$isFirst" ]; then
 		    if [ "$clear" ]; then
-			printMessageAndResetTimer %s "$netLine"
+			printMessageAndResetTimer %s "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		    else
-			printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}$netLine"
+			printMessageAndResetTimer %s "${SAVE_CURSOR_POSITION}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		    fi && isFirst=
 		else
-		    printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}$netLine"
+		    printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_INLINE_SUFFIX}$netLine"
 		fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	    fi
 	elif [ "${#render[@]}" -gt 0 ]; then
