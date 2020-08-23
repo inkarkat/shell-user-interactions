@@ -16,7 +16,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]|--render-timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
