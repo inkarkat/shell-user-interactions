@@ -533,11 +533,9 @@ do
 	    handlePlainDurationUpdate
 	fi
     else
-	if [ -n "$timer" ]; then
-	    if [ $((SECONDS - lastDuration)) -ge $timer ]; then
-		duration=$SECONDS
-		renderedDuration="$(secondsToDuration "$duration")"
-	    fi
+	if [ -n "$timer" -a $lastDuration -ne $SECONDS ]; then
+	    duration=$SECONDS
+	    renderDuration
 	fi
 
 	if [ "$isInline" ]; then
@@ -605,7 +603,7 @@ do
 	else
 	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
-	    [ -n "$timer" -a "$lastDuration" != "$duration" ] && handlePlainDurationUpdate
+	    [ -n "$timer" -a $lastDuration -ne $duration ] && handlePlainDurationUpdate
 	fi
     fi
     statusLine="$line"
