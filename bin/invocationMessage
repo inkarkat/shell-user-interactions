@@ -351,7 +351,6 @@ esac
 line=
 duration=0
 lastDuration=0
-lastRenderedDuration=
 defaultReader()
 {
     IFS=$'\n' read -r line
@@ -453,11 +452,15 @@ renderDuration()
 {
     renderedDuration="$(secondsToDuration "$duration")"
     lastDuration=$duration
-    lastRenderedDuration="$renderedDuration"
+}
+renderCurrentDuration()
+{
+    duration=$SECONDS
+    renderDuration
 }
 handlePlainDurationUpdate()
 {
-    local lastRenderedDuration="$lastRenderedDuration"
+    local lastRenderedDuration="$renderedDuration"
     renderDuration
     printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}" || return
     sigilPrefix="${renderedDuration//?/}${renderedDuration:+$ERASE_TO_END}"
@@ -533,12 +536,8 @@ do
 	    handlePlainDurationUpdate
 	fi
     else
-	if [ -n "$timer" -a $lastDuration -ne $SECONDS ]; then
-	    duration=$SECONDS
-	    renderDuration
-	fi
-
 	if [ "$isInline" ]; then
+	    [ -n "$timer" -a $lastDuration -ne $SECONDS ] && renderCurrentDuration
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ -n "$netLine" ]; then
 		if [ "$isFirst" ]; then
@@ -552,6 +551,9 @@ do
 		fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	    fi
 	elif [ "${#render[@]}" -gt 0 ]; then
+	    [ -n "$timer" -a $lastDuration -ne $SECONDS ] && renderCurrentDuration
+	    [ "$isTimer" ] || renderedDuration=''
+
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
 	    if [ "$isInlineWithRender" ]; then
 		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
@@ -603,7 +605,10 @@ do
 	else
 	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
 }$line"
-	    [ -n "$timer" -a $lastDuration -ne $duration ] && handlePlainDurationUpdate
+	    if [ -n "$timer" -a $lastDuration -ne $SECONDS ]; then
+		duration=$SECONDS
+		handlePlainDurationUpdate
+	    fi
 	fi
     fi
     statusLine="$line"
