@@ -539,8 +539,8 @@ do
 		    else
 			printDuration %s "${render[-1]}" "${lastRenderedDuration//?/}${lastRenderedDuration:+}${renderedDuration}${renderedDuration:+ }${lastRenderedDuration:+$ERASE_TO_END}" "${render[$renderCount]}" && lastDuration=$duration
 		    fi; then
-		    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 		    sigilPrefix="${render[-1]}${renderedDuration//?/}${renderedDuration:+}${ERASE_TO_END}"
+		    [ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
 	    fi
