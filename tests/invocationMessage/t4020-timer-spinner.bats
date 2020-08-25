@@ -18,17 +18,22 @@ load timer
 }
 
 @test "first print duration every two seconds and error output powers a spinner and then sigil" {
-skip
     run invocationMessage --message 'message: ' --success OK --timer 2 --timespan 0 --spinner-stderr --command "$SLEEP_FIRST_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}(2s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fourth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fifth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK (7s)" ]
+    [[ "$output" =~ ^"message: 2s /4s ${ERASE_TO_END}-"[45]"s ${ERASE_TO_END}\\"[56]"s ${ERASE_TO_END}|"("6s ${ERASE_TO_END}/")?"${ERASE_TO_END}OK ("[67]"s)"$ ]]  || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "timer and then spin" {
-skip
     run invocationMessage --timespan 0 --spinner-stderr --timer 2 --success YES -m 'just a test: ' -c '{ sleep 3; echo one; sleep 1; echo two; sleep 1; echo three; sleep 1; echo four; sleep 1; echo >&2 X1; sleep 1; echo >&2 X2 ; sleep 1; echo >&2 X3; sleep 1; echo >&2 X4; sleep 1; echo five; sleep 1; echo six; sleep 1; echo seven; sleep 1; }'
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}(2s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fourth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fifth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK (7s)" ]
+    [[ "$output" =~ ^"just a test: 2s /one
+"("4s ${ERASE_TO_END}-")?"two
+"("4s ${ERASE_TO_END}-")?"three
+four
+6s ${ERASE_TO_END}\7s ${ERASE_TO_END}|8s ${ERASE_TO_END}/8s ${ERASE_TO_END}-10s ${ERASE_TO_END}\five
+six
+12s ${ERASE_TO_END}|seven
+14s ${ERASE_TO_END}/${ERASE_TO_END}YES (14s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
