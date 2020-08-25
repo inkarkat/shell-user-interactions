@@ -7,22 +7,18 @@ load timer
     run invocationMessage --message 'message: ' --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 2s4s${ERASE_TO_END}" ]
+    [ "$output" = "message: 2s4s${ERASE_TO_END}5s${ERASE_TO_END}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, ignoring stderr" {
     run invocationMessage --message 'message: ' --timer 2 --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 3s6s${ERASE_TO_END}first
+    [[ "$output" =~ ^"message: 1s"[234]s"${ERASE_TO_END}"[45]s"${ERASE_TO_END}"[56]s"${ERASE_TO_END}"[67]s"${ERASE_TO_END}first
 second
 third
 fourth
-fifth" ] || [ "$output" = "message: 2s4s${ERASE_TO_END}6s${ERASE_TO_END}first
-second
-third
-fourth
-fifth" ]
+fifth"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds is suppressed with initial delay of 3 seconds due to shortness" {
@@ -36,14 +32,14 @@ fifth" ]
     run invocationMessage --message 'message: ' --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s" ]
+    [ "$output" = "message: 4s5s${ERASE_TO_END}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
     run invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s${ERASE_TO_END}OK (5s)" ]
+    [ "$output" = "message: 4s5s${ERASE_TO_END}${ERASE_TO_END}OK (5s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {
@@ -51,5 +47,5 @@ fifth" ]
     run invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s${ERASE_TO_END}OK" ]
+    [[ "$output" =~ ^"message: "[45]"s"[56]"s${ERASE_TO_END}${ERASE_TO_END}OK"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
