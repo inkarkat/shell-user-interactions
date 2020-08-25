@@ -25,7 +25,7 @@ load timer
 }
 
 @test "timer and then spin" {
-    run invocationMessage --timespan 0 --spinner-stderr --timer 2 --success YES -m 'just a test: ' -c '{ sleep 3; echo one; sleep 1; echo two; sleep 1; echo three; sleep 1; echo four; sleep 1; echo >&2 X1; sleep 1; echo >&2 X2 ; sleep 1; echo >&2 X3; sleep 1; echo >&2 X4; sleep 1; echo five; sleep 1; echo six; sleep 1; echo seven; sleep 1; }'
+    run invocationMessage --timespan 0 --spinner-stderr --timer 2 --success YES -m 'just a test: ' -c "$SLEEP_OUT_ERR_OUT"
 
     [ $status -eq 0 ]
     [[ "$output" =~ ^"just a test: 2s /one
