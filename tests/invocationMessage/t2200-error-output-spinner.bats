@@ -16,7 +16,7 @@ load fixture
     [ "$output" = "message: /- " ]
 }
 
-@test "full spin cycle" {
+@test "errors powering full spin cycle" {
     run invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --command 'seq 1 5 >&2'
 
     [ $status -eq 0 ]

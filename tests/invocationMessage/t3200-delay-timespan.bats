@@ -3,13 +3,13 @@
 load fixture
 load delayer
 
-@test "single-line error from the command is suppressed because it falls within the initial delay" {
+@test "single-line error from the command is suppressed because it falls within the initial delay that is larger than timespan" {
     run invocationMessage --message 'message: ' --initial-delay 1001ms --timespan 1000ms --inline-stderr --command "$SINGLE_LINE_COMMAND"
     [ $status -eq 0 ]
     [ "$output" = "" ]
 }
 
-@test "two-line error from the command prints second line because it falls just within the initial delay" {
+@test "two-line error from the command prints second line because it falls just within the initial delay that is larger than timespan" {
     run invocationMessage --message 'message: ' --initial-delay 1000ms --timespan 1000ms --inline-stderr --command 'seq 1 2 >&2'
     [ $status -eq 0 ]
     [ "$output" = "message: ${SAVE_CURSOR_POSITION}2" ]

@@ -33,7 +33,7 @@ stderr again" ]
     assert_sink 'message: /-\| '
 }
 
-@test "full spin cycle" {
+@test "output powering full spin cycle" {
     run invocationMessage --message 'message: ' --timespan 0 --spinner --command 'seq 1 5'
 
     [ $status -eq 0 ]
