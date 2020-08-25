@@ -7,21 +7,19 @@ load timer
     run invocationMessage --message 'message: ' --timer 2 --render-timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "${output//[34]/X}" = "message: /-\\${SAVE_CURSOR_POSITION}(Xs) third |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) fourth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) fifth -${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) \\ " ]
+    [[ "$output" =~ ^"message: /"("1s -"[12]"s ${ERASE_TO_END}"|"-"[12]"s ")"\\"[234]"s ${ERASE_TO_END}|"[45]"s ${ERASE_TO_END}/"[56]"s ${ERASE_TO_END}-"[56]"s ${ERASE_TO_END}\\ "$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds and both duration and error output power a spinner and then sigil" {
     run invocationMessage --message 'message: ' --success OK --timer 2 --render-timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    output="${output//[34]/X}"
-    output="${output//[67]/Y}"
-    [ "$output" = "message: /-\\${SAVE_CURSOR_POSITION}(Xs) third |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) fourth /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) fifth -${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(Xs) \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK (Ys)" ]
+    [[ "$output" =~ ^"message: /"("1s -"[12]"s ${ERASE_TO_END}"|"-"[12]"s ")"\\"[234]"s ${ERASE_TO_END}|"[45]"s ${ERASE_TO_END}/"[56]"s ${ERASE_TO_END}-"[56]"s ${ERASE_TO_END}\\${ERASE_TO_END}OK (7s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "first print duration every two seconds and both duration and error output power a spinner and then sigil" {
     run invocationMessage --message 'message: ' --success OK --timer 2 --render-timer 2 --timespan 0 --spinner-stderr --command "$SLEEP_FIRST_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}(2s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) -${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fourth \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) fifth |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}(4s) /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK (7s)" ]
+    [[ "$output" =~ ^"message: 2s /4s ${ERASE_TO_END}-"[45]"s ${ERASE_TO_END}\\"[56]"s ${ERASE_TO_END}|"("6s ${ERASE_TO_END}/")?"${ERASE_TO_END}OK ("[67]"s)"$ ]]  || echo "$output" | trcontrols | failThis prefix \# >&3
 }

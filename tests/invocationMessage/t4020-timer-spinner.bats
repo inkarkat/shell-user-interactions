@@ -32,7 +32,7 @@ load timer
 "("4s ${ERASE_TO_END}-")?"two
 "("4s ${ERASE_TO_END}-")?"three
 four
-6s ${ERASE_TO_END}\7s ${ERASE_TO_END}|8s ${ERASE_TO_END}/8s ${ERASE_TO_END}-10s ${ERASE_TO_END}\five
+6s ${ERASE_TO_END}\\7s ${ERASE_TO_END}|8s ${ERASE_TO_END}/8s ${ERASE_TO_END}-10s ${ERASE_TO_END}\five
 six
 12s ${ERASE_TO_END}|seven
 14s ${ERASE_TO_END}/${ERASE_TO_END}YES (14s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
