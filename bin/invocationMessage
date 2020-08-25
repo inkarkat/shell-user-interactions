@@ -459,7 +459,7 @@ renderCurrentDuration()
 }
 handlePlainDurationUpdate()
 {
-    local lastRenderedDuration="$renderedDuration"
+    lastRenderedDuration="$renderedDuration"
     renderDuration
     if printDuration %s "${lastRenderedDuration//?/}${renderedDuration}${lastRenderedDuration:+$ERASE_TO_END}"; then
 	lastDuration=$duration
@@ -563,6 +563,7 @@ do
 		fi && sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 	    fi
 	elif [ "${#render[@]}" -gt 0 ]; then
+	    lastRenderedDuration="$renderedDuration"
 	    [ -n "$timer" -a $lastDuration -ne $SECONDS ] && renderCurrentDuration
 	    [ "$isTimer" ] || renderedDuration=''
 
