@@ -14,7 +14,7 @@ load timer
     run invocationMessage --message 'message: ' --timer 2 --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: 1s"[23]s"${ERASE_TO_END}"[45]s"${ERASE_TO_END}"[56]s"${ERASE_TO_END}"[67]s"${ERASE_TO_END}first
+    [[ "$output" =~ ^"message: 1s"[234]s"${ERASE_TO_END}"[45]s"${ERASE_TO_END}"[56]s"${ERASE_TO_END}"[67]s"${ERASE_TO_END}first
 second
 third
 fourth
@@ -47,5 +47,5 @@ fifth"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
     run invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s5s${ERASE_TO_END}${ERASE_TO_END}OK" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: "[45]"s"[56]"s${ERASE_TO_END}${ERASE_TO_END}OK"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
