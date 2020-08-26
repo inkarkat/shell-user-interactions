@@ -28,12 +28,12 @@ load fixture
     run invocationMessage --message 'message: ' --clear all --success OK --fail FAILED true
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: OK${RE}" ]
 }
 
 @test "a failing command with clear appends the passed fail sigil, waits, and erases" {
     run invocationMessage --message 'message: ' --clear all --success OK --fail FAILED false
 
     [ $status -eq 1 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: FAILED${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: FAILED${RE}" ]
 }

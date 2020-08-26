@@ -13,15 +13,15 @@ load fixture
     run invocationMessage --message 'message: ' --clear all printf executed
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: executed${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: executed${RE}" ]
 }
 
 @test "echo with clear prints and then erases the message" {
     run invocationMessage --message 'message: ' --clear all echo executed
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: executed
-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: executed
+${RE}" ]
 }
 
 @test "echo with clear does not delay" {

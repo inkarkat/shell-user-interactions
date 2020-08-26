@@ -69,7 +69,7 @@ stderr again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /${RE}"
 }
 
 @test "multi-line output from the command powers a spinner and then cleared" {
@@ -80,7 +80,7 @@ stderr again" ]
 stdout again
 stderr
 stderr again" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /-\\|${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /-\\|${RE}"
 }
 
 @test "single-line output from the command powers a spinner and then cleared with sigil" {
@@ -88,7 +88,7 @@ stderr again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /OK${RE}"
 }
 
 @test "multi-line output from the command powers a spinner and then cleared with sigil" {
@@ -99,5 +99,5 @@ stderr again" ]
 stdout again
 stderr
 stderr again" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /-\\|OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /-\\|OK${RE}"
 }

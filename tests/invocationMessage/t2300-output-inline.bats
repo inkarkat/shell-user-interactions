@@ -8,7 +8,7 @@ load inline
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout"
+    assert_sink "message: ${S}stdout"
 }
 
 @test "multi-line output from the command is individually appended to the message as the command runs" {
@@ -17,7 +17,7 @@ load inline
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "message: ${SAVE_CURSOR_POSITION}stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again"
+     assert_sink "message: ${S}stderr${RE}stderr again${RE}stdout${RE}stdout again"
 }
 
 @test "multi-line output in different order from the command is individually appended to the message as the command runs" {
@@ -26,7 +26,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "message: ${SAVE_CURSOR_POSITION}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr again"
+     assert_sink "message: ${S}stdout${RE}stderr${RE}stdout again${RE}stderr again"
 }
 
 @test "single-line output from the command is individually appended to the message and sigil as the command runs" {
@@ -34,7 +34,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK"
+    assert_sink "message: ${S}stdout${RE}OK"
 }
 
 @test "multi-line output from the command is individually appended to the message and sigil as the command runs" {
@@ -43,7 +43,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "message: ${SAVE_CURSOR_POSITION}stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK"
+     assert_sink "message: ${S}stderr${RE}stderr again${RE}stdout${RE}stdout again${RE}OK"
 }
 
 @test "single-line output from the command is individually appended and then cleared" {
@@ -51,7 +51,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: stdout${RE}"
 }
 
 @test "multi-line output from the command is individually appended and then cleared" {
@@ -60,7 +60,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "${SAVE_CURSOR_POSITION}message: stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+     assert_sink "${S}message: stderr${RE}message: stderr again${RE}message: stdout${RE}message: stdout again${RE}"
 }
 
 @test "single-line output from the command is individually appended and then cleared with sigil" {
@@ -68,7 +68,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: stdout${RE}message: OK${RE}"
 }
 
 @test "multi-line output from the command is individually appended and then cleared with sigil" {
@@ -77,5 +77,5 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-     assert_sink "${SAVE_CURSOR_POSITION}message: stderr${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stderr again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+     assert_sink "${S}message: stderr${RE}message: stderr again${RE}message: stdout${RE}message: stdout again${RE}message: OK${RE}"
 }

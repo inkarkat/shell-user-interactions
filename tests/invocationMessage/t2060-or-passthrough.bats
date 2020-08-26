@@ -6,7 +6,7 @@ load fixture
     run invocationMessage --or-passthrough --message 'message: ' --clear all --command 'echo commandline' echo simplecommand
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: commandline
+    [ "$output" = "${S}message: commandline
 simplecommand
-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+${RE}" ]
 }

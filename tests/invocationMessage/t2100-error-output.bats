@@ -61,14 +61,14 @@ more from command" ]
     run invocationMessage --message 'message: ' --clear all --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command" ]
+    [ "$output" = "${S}message: ${RE}from command" ]
 }
 
 @test "multi-line error from the command is printed after the cleared message after the command concludes" {
     run invocationMessage --message 'message: ' --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: ${RE}from command
 more from command" ]
 }
 
@@ -76,13 +76,13 @@ more from command" ]
     run invocationMessage --message 'message: ' --clear all --success OK --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command" ]
+    [ "$output" = "${S}message: OK${RE}from command" ]
 }
 
 @test "multi-line error from the command is printed after the cleared message and sigil after the command concludes" {
     run invocationMessage --message 'message: ' --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: OK${RE}from command
 more from command" ]
 }

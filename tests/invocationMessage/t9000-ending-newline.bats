@@ -15,7 +15,7 @@ load newline
     runWithFullOutput invocationMessage --message 'message: ' --clear all true
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: ${RE}" ]
 }
 
 @test "true appends the passed success sigil with newline" {
@@ -30,7 +30,7 @@ load newline
     runWithFullOutput invocationMessage --message 'message: ' --clear all --success OK --fail FAILED true
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: OK${RE}" ]
 }
 
 @test "single-line error from the command is appended to the message after the command concludes with newline" {
@@ -73,7 +73,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --clear all --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: ${RE}from command
 " ]
 }
 
@@ -81,7 +81,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: ${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: ${RE}from command
 more from command
 " ]
 }
@@ -90,7 +90,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --clear all --success OK --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: OK${RE}from command
 " ]
 }
 
@@ -98,7 +98,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}from command
+    [ "$output" = "${S}message: OK${RE}from command
 more from command
 " ]
 }
@@ -107,7 +107,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command
+    [ "$output" = "message: ${S}from command
 " ]
 }
 
@@ -115,7 +115,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}more from command
+    [ "$output" = "message: ${S}from command${RE}more from command
 " ]
 }
 
@@ -123,7 +123,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --inline-stderr --success OK --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK
+    [ "$output" = "message: ${S}from command${RE}OK
 " ]
 }
 
@@ -131,7 +131,7 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: ${SAVE_CURSOR_POSITION}from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK
+    [ "$output" = "message: ${S}from command${RE}more from command${RE}OK
 " ]
 }
 
@@ -139,14 +139,14 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: from command${RE}message: more from command${RE}" ]
 }
 
 @test "multi-line error from the command is individually appended and then cleared with sigil, no newline" {
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --inline-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: more from command${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: from command${RE}message: more from command${RE}message: OK${RE}" ]
 }
 
 @test "single-line error from the command powers a spinner after the message as the command runs with newline" {
@@ -185,28 +185,28 @@ more from command
     runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --clear all --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: /${RE}" ]
 }
 
 @test "multi-line error from the command powers a spinner and then cleared, no newline" {
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --clear all --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: /-${RE}" ]
 }
 
 @test "single-line error from the command powers a spinner and then cleared with sigil, no newline" {
     runWithFullOutput invocationMessage --message 'message: ' --spinner-stderr --clear all --success OK --command "$SINGLE_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: /OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: /OK${RE}" ]
 }
 
 @test "multi-line error from the command powers a spinner and then cleared with sigil, no newline" {
     runWithFullOutput invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --clear all --success OK --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "${SAVE_CURSOR_POSITION}message: /-OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" ]
+    [ "$output" = "${S}message: /-OK${RE}" ]
 }
 
 @test "multi-line error that contains the statusline marker does not rotate the spinner with newline" {

@@ -14,12 +14,12 @@ load timer
     run invocationMessage --message 'message: ' --success OK --render-timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: /-\|/-\${ERASE_TO_END}OK ("[67]"s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: /-\|/-\${E}OK ("[67]"s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "first duration and error output power a spinner and then print sigil" {
     run invocationMessage --message 'message: ' --success OK --render-timer 2 --timespan 0 --spinner-stderr --command "$SLEEP_FIRST_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: /-\|/${ERASE_TO_END}OK (7s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [ "$output" = "message: /-\|/${E}OK (7s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }

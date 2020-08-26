@@ -8,7 +8,7 @@ load inline
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout / "
+    assert_sink "message: ${S}stdout / "
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner" {
@@ -17,7 +17,7 @@ load inline
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "message: /-${SAVE_CURSOR_POSITION}stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again | "
+    assert_sink "message: /-${S}stdout \\${RE}stdout again | "
 }
 
 @test "multi-line output in different order from the command is individually appended / error output rotates the spinner" {
@@ -26,7 +26,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again \\| "
+    assert_sink "message: ${S}stdout /-${RE}stdout again \\| "
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and final sigil" {
@@ -34,7 +34,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}stdout /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK"
+    assert_sink "message: ${S}stdout /${RE}OK"
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and final sigil" {
@@ -43,7 +43,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "message: /-${SAVE_CURSOR_POSITION}stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}stdout again |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}OK"
+    assert_sink "message: /-${S}stdout \\${RE}stdout again |${RE}OK"
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and then cleared" {
@@ -51,7 +51,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: stdout /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: stdout /${RE}"
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and then cleared" {
@@ -60,7 +60,7 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /-stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /-stdout \\${RE}message: stdout again |${RE}"
 }
 
 @test "single-line output from the command is individually appended / error output rotates the spinner and then cleared with sigil" {
@@ -68,7 +68,7 @@ stdout again" ]
 
     [ $status -eq 0 ]
     [ "$output" = "stdout" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: stdout /${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: stdout /${RE}message: OK${RE}"
 }
 
 @test "multi-line output from the command is individually appended / error output rotates the spinner and then cleared with sigil" {
@@ -77,18 +77,18 @@ stdout again" ]
     [ $status -eq 0 ]
     [ "$output" = "stdout
 stdout again" ]
-    assert_sink "${SAVE_CURSOR_POSITION}message: /-stdout \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: stdout again |${RESTORE_CURSOR_POSITION}${ERASE_TO_END}message: OK${RESTORE_CURSOR_POSITION}${ERASE_TO_END}"
+    assert_sink "${S}message: /-stdout \\${RE}message: stdout again |${RE}message: OK${RE}"
 }
 
 @test "identical output lines still rotate the spinner" {
     run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
-${S}echo foo;
-${S}echo foo;
-${S}echo foo;
-${S}echo foo;
-${S}echo >&2 x;
-${S}echo bar;
-${S}echo bar;
+${MS}echo foo;
+${MS}echo foo;
+${MS}echo foo;
+${MS}echo foo;
+${MS}echo >&2 x;
+${MS}echo bar;
+${MS}echo bar;
 "
 
     [ $status -eq 0 ]
@@ -98,25 +98,25 @@ foo
 foo
 bar
 bar" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}foo /-\\|/${RESTORE_CURSOR_POSITION}${ERASE_TO_END}bar -\\ "
+    assert_sink "message: ${S}foo /-\\|/${RE}bar -\\ "
 }
 
 @test "mixed longer output starting and ending with stdout spinning" {
     run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
-${S}echo foo;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo second;
-${S}echo >&2 x;
-${S}echo third argument;
-${S}echo immediate fourth;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo foo;
-${S}echo >&2 x;
-${S}echo last;
+${MS}echo foo;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo second;
+${MS}echo >&2 x;
+${MS}echo third argument;
+${MS}echo immediate fourth;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo foo;
+${MS}echo >&2 x;
+${MS}echo last;
 "
 
     [ $status -eq 0 ]
@@ -126,30 +126,30 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "message: ${SAVE_CURSOR_POSITION}foo /-\\|${RESTORE_CURSOR_POSITION}${ERASE_TO_END}second /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}third argument \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}immediate fourth |/-\\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}foo |/${RESTORE_CURSOR_POSITION}${ERASE_TO_END}last - "
+    assert_sink "message: ${S}foo /-\\|${RE}second /-${RE}third argument \\${RE}immediate fourth |/-\\${RE}foo |/${RE}last - "
 }
 
 @test "mixed longer output starting and ending with stderr spinning" {
     run invocationMessage --message 'message: ' --timespan 0 --inline-spinner-stderr --command "
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo foo;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo second;
-${S}echo >&2 x;
-${S}echo third argument;
-${S}echo immediate fourth;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo >&2 x;
-${S}echo foo;
-${S}echo >&2 x;
-${S}echo last;
-${S}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo foo;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo second;
+${MS}echo >&2 x;
+${MS}echo third argument;
+${MS}echo immediate fourth;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo >&2 x;
+${MS}echo foo;
+${MS}echo >&2 x;
+${MS}echo last;
+${MS}echo >&2 x;
 "
 
     [ $status -eq 0 ]
@@ -159,5 +159,5 @@ third argument
 immediate fourth
 foo
 last" ]
-    assert_sink "message: /-\\|${SAVE_CURSOR_POSITION}foo /-\\|${RESTORE_CURSOR_POSITION}${ERASE_TO_END}second /-${RESTORE_CURSOR_POSITION}${ERASE_TO_END}third argument \\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}immediate fourth |/-\\${RESTORE_CURSOR_POSITION}${ERASE_TO_END}foo |/${RESTORE_CURSOR_POSITION}${ERASE_TO_END}last -\\ "
+    assert_sink "message: /-\\|${S}foo /-\\|${RE}second /-${RE}third argument \\${RE}immediate fourth |/-\\${RE}foo |/${RE}last -\\ "
 }

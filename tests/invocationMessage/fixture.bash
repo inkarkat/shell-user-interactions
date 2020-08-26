@@ -1,20 +1,21 @@
 #!/bin/bash
 
-export S='sleep 0.01;'
+export MS='sleep 0.01;'
 
 export INVOCATIONMESSAGE_SINK=/dev/stdout
 export INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0
 export INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=0
 
 export SINGLE_LINE_COMMAND='echo from command >&2'
-export MULTI_LINE_COMMAND="{ echo from command; $S echo more from command; } >&2"
+export MULTI_LINE_COMMAND="{ echo from command; $MS echo more from command; } >&2"
 export ECHO_COMMAND='echo stdout'
-export BOTH_COMMAND="echo >&2 stderr; $S echo >&2 stderr again; $S echo stdout; $S echo stdout again"
-export MIXED_COMMAND="echo stdout; $S echo >&2 stderr; $S echo stdout again; $S echo >&2 stderr again"
+export BOTH_COMMAND="echo >&2 stderr; $MS echo >&2 stderr again; $MS echo stdout; $MS echo stdout again"
+export MIXED_COMMAND="echo stdout; $MS echo >&2 stderr; $MS echo stdout again; $MS echo >&2 stderr again"
 
-export SAVE_CURSOR_POSITION='[s'
-export RESTORE_CURSOR_POSITION='[u'
-export ERASE_TO_END='[0J'
+export S='[s'
+export R='[u'
+export E='[0J'
+export RE="${R}${E}"
 export SP=' '
 
 assertNoDelay()
