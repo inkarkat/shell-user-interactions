@@ -16,7 +16,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] [-l|--max-length COLS] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -122,6 +122,11 @@ HELPDESCRIPTION
 			Rotate the spinner / change the sweeping control every
 			INTERVAL. This provides some form of feedback if COMMAND
 			does not (or not often) provide output.
+    --max-length|-l COLS
+			Reserve space for COLS screen cells for MESSAGE +
+			printed lines from any --inline option. By default,
+			these are truncated to a single line (by disabling
+			terminal line wrapping).
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such.
 EXIT STATUS:
@@ -168,6 +173,8 @@ fi
 : ${SAVE_CURSOR_POSITION=[s}
 : ${RESTORE_CURSOR_POSITION=[u}
 : ${ERASE_TO_END=[0J}
+: ${ENABLE_LINE_WRAP=[?7h}
+: ${DISABLE_LINE_WRAP=[?7l}
 isPassthroughIfNoTerminal=
 unset message
 successSigil=
@@ -183,6 +190,7 @@ reader=defaultReader
 timer=
 isTimer=
 isRenderTimer=
+maxLength=
 isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
@@ -222,6 +230,8 @@ do
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isTimer=t;;
 	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
+	--max-length|-l)
+			shift; maxLength="$1"; shift;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -284,6 +294,19 @@ if [ "$isPassthroughIfNoTerminal" ] && ! printfToTerminal ''; then
 	"${commands[@]}"
     fi
     exit $?
+fi
+
+reserveSpace=
+if [ "$isInline" ] || [ "$isInlineWithRender" ]; then
+    if [ -n "$maxLength" ]; then
+	if [ $maxLength -gt 0 ]; then
+	    printf -v spaceOut "%${maxLength}s" ' '
+	    reserveSpace="${spaceOut}${spaceOut// /}"
+	fi
+    else
+	printfToTerminal %s "$DISABLE_LINE_WRAP"
+	trap 'printfToTerminal %s "$ENABLE_LINE_WRAP" 2>/dev/null' EXIT
+    fi
 fi
 
 : ${timespan:=1}
@@ -473,9 +496,9 @@ initialPrintStatus=
 resetTime "$timespan" "$initialDelay"
 delayedMessage=
 if [ $initialDelay = 0 ]; then
-    printMessage %s "${clear:+$SAVE_CURSOR_POSITION}$message" || initialPrintStatus=$?
+    printMessage %s "${reserveSpace}${clear:+$SAVE_CURSOR_POSITION}$message" || initialPrintStatus=$?
 else
-    delayedMessage="${clear:+$SAVE_CURSOR_POSITION}$message"
+    delayedMessage="${reserveSpace}${clear:+$SAVE_CURSOR_POSITION}$message"
 fi
 
 STATUSLINE_PREFIX='#-#'
