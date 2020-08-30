@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 
 @test "single-line error from the command is individually appended to the message as the command runs" {
     run invocationMessage --message 'message: ' --inline-stderr --command "$SINGLE_LINE_COMMAND"

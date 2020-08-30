@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 load newline
 load delayer
 

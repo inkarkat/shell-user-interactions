@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 
 @test "print duration when incomplete lines are printed slowly" {
     run invocationMessage --message 'message: ' --timer 2 --timespan 0 --inline-stderr --command "{ printf first.; sleep 0.5; printf second.; sleep 0.8; printf third.; sleep 4.8; echo fourth; sleep 1.8; printf A; sleep 2.5; printf B; sleep 2.5; printf C; } >&2"

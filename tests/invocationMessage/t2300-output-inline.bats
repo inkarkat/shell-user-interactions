@@ -2,6 +2,7 @@
 
 load fixture
 load inline
+load inline-sink
 
 @test "single-line output from the command is individually appended to the message as the command runs" {
     run invocationMessage --message 'message: ' --inline --command "$ECHO_COMMAND"

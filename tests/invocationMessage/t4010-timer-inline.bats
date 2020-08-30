@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 load timer
 
 @test "print duration every two seconds and error output inline" {

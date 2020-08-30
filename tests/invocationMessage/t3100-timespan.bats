@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 load delayer
 
 @test "multi-line error from the command prints every second one including the last because of timespan" {
