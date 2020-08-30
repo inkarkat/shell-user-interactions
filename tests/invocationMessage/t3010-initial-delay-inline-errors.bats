@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
+load inline
 load delayer
 
 @test "single-line error from the command is suppressed because it falls within the initial delay" {

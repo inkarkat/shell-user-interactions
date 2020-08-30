@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
-load inline
+load inline-sink
 
 @test "single-line output from the command powers a spinner after the message as the command runs" {
     run invocationMessage --message 'message: ' --spinner --command "$ECHO_COMMAND"
