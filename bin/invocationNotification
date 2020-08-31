@@ -484,7 +484,7 @@ hasInvokedTarget=
 invokeTarget()
 {
     isExpired || return 1
-    invokeTargetRaw "$@"
+    invokeTargetRaw "$@" || return $?
     hasInvokedTarget=t
 }
 invokeTargetAndResetTimer()
@@ -513,7 +513,56 @@ invokeTargetClear()
 	\( "$clear" = success -a $status -eq 0 \) -o \
 	\( "$clear" = failure -a $status -ne 0 \) \
 	] && isNeedClear=
-    [ "$isNeedClear" ] && invokeTargetAddendum "$@"
+    [ "$isNeedClear" ] && invokeTargetAddendum "$1"
+}
+invokeTargetDuration()
+{
+    if [ "$hasInvokedTarget" ]; then
+	# Initial delay has already passed, do the update without considering
+	# timeout expiry.
+	invokeTargetRaw "$@"
+    else
+	invokeTarget "$@"
+    fi
+}
+secondsToDuration()
+{
+    local seconds="${1:?}"; shift
+    local weeks=$((seconds / 604800))
+    seconds=$((seconds - 604800 * weeks))
+    local days=$((seconds / 86400))
+    seconds=$((seconds - 86400 * days))
+    local hours=$((seconds / 3600))
+    seconds=$((seconds - 3600 * hours))
+    local minutes=$((seconds / 60))
+    seconds=$((seconds - (60 * minutes)))
+
+    local renderedWeeks renderedDays renderedHours renderedMinutes renderedSeconds
+    [ $weeks -gt 0 ] && renderedWeeks="${weeks}w "
+    [ $days -gt 0 ] && renderedDays="${days}d "
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 ] && printf -v renderedHours %02d: "$hours"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedMinutes %02d: "$minutes"
+    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="${seconds}s"
+    printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
+}
+renderedDuration=
+renderDuration()
+{
+    renderedDuration="$(secondsToDuration "$duration")"
+}
+renderCurrentDuration()
+{
+    duration=$SECONDS
+    renderDuration
+}
+handlePlainDurationUpdate()
+{
+    renderDuration
+    if invokeTargetDuration "$renderedDuration"; then
+	lastDuration="$duration"
+    else
+	renderedDuration=''
+    fi
 }
 
 initialTargetStatus=
@@ -532,59 +581,90 @@ let renderCount=0
 unset previousLine
 unset status
 exec 4>&1 1>&2 2>&4 4>&-
-while IFS=$'\n' read -r line
+while $reader
 do
-    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-
-    if [ "$isInline" ]; then
-	if [ -n "$netLine" ]; then
-	    invokeTargetAndResetTimer "$netLine"
-	fi
-    elif [ "${#render[@]}" -gt 0 ]; then
-	if [ "$isInlineWithRender" ]; then
-	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
-	    if [ "$stderrLine" != "$netLine" ]; then
-		stdinLine="${netLine#*${STDIN_START}}"
-		stdinLine="${stdinLine%%${STDIN_END}*}"
+    if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
+	if [ "$isInline" ]; then
+	    renderDuration
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    if [ -n "$netLine" ]; then
+		invokeTargetDuration "${INVOCATIONNOTIFICATION_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONNOTIFICATION_TIMER_INLINE_SUFFIX}$netLine"
 	    fi
-	    # As we do want to render empty lines output to stdout, we need to
-	    # explicitly filter out the final statusline output.
-	    if [ "$netLine" = "$line" ]; then
-		if [ "$isRenderBeforeInline" ]; then
-		    stdinAndRender="${render[$renderCount]}${stdinLine:+ }${stdinLine}"
-		else
-		    stdinAndRender="${stdinLine}${stdinLine:+ }${render[$renderCount]}"
+	elif [ "${#render[@]}" -gt 0 ]; then
+	    [ "$isTimer" ] && renderDuration || renderedDuration=''
+	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	    if [ "$isRenderBeforeInline" ]; then
+		netLineAndRender="${render[$renderCount]}${netLine:+ }${netLine}"
+	    else
+		netLineAndRender="${netLine}${netLine:+ }${render[$renderCount]}"
+	    fi
+	    if invokeTargetDuration "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$netLineAndRender"; then
+		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+	    fi
+	else
+	    handlePlainDurationUpdate
+	fi
+    else
+	netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+	if [ "$isInline" ]; then
+	    [ -n "$timer" -a $lastDuration -ne $SECONDS ] && renderCurrentDuration
+	    if [ -n "$netLine" ]; then
+		invokeTargetAndResetTimer "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_INLINE_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_INLINE_SUFFIX}$netLine"
+	    fi
+	elif [ "${#render[@]}" -gt 0 ]; then
+	    [ -n "$timer" -a $lastDuration -ne $SECONDS ] && renderCurrentDuration
+	    [ "$isTimer" ] || renderedDuration=''
+
+	    if [ "$isInlineWithRender" ]; then
+		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+		if [ "$stderrLine" != "$netLine" ]; then
+		    stdinLine="${netLine#*${STDIN_START}}"
+		    stdinLine="${stdinLine%%${STDIN_END}*}"
 		fi
-		if invokeTargetAndResetTimer "$stdinAndRender"; then
+		# As we do want to render empty lines output to stdout, we need to
+		# explicitly filter out the final statusline output.
+		if [ "$netLine" = "$line" ]; then
+		    if [ "$isRenderBeforeInline" ]; then
+			stdinAndRender="${render[$renderCount]}${stdinLine:+ }${stdinLine}"
+		    else
+			stdinAndRender="${stdinLine}${stdinLine:+ }${render[$renderCount]}"
+		    fi
+		    if invokeTargetAndResetTimer "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$stdinAndRender"; then
+			let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		    fi
+		else
+		    invokeTargetClear "$line" "$stdinLine"
+		    statusLine="$line"
+		fi
+		continue
+	    elif [ "$isCaptureStdout" ]; then
+		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
+		if [ -n "$stderrLine" ]; then
+		    printf '%s\n' "$stderrLine"
+		    netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
+		fi
+	    fi
+
+	    if [ "$netLine" = "$line" ]; then
+		if [ -n "$netLine" ] && invokeTargetAndResetTimer "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}${render[$renderCount]}"; then
 		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
 		fi
 	    else
-		invokeTargetClear "$line" "$stdinLine"
-		statusLine="$line"
-	    fi
-	    continue
-	elif [ "$isCaptureStdout" ]; then
-	    stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
-	    if [ -n "$stderrLine" ]; then
-		printf '%s\n' "$stderrLine"
-		netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
-	    fi
-	fi
-
-	if [ "$netLine" = "$line" ]; then
-	    if [ -n "$netLine" ] && invokeTargetAndResetTimer "${render[$renderCount]}"; then
-		let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		invokeTargetClear "$line" ''
 	    fi
 	else
-	    invokeTargetClear "$line" ''
+	    # To avoid printing the last (exit status) line, buffer one line and
+	    # lag behind one line with printing.
+	    if [ -n "${previousLine+t}" ]; then
+		printf '%s\n' "$previousLine"
+	    fi
+	    previousLine="$line"
+
+	    if [ -n "$timer" -a $lastDuration -ne $SECONDS ]; then
+		duration=$SECONDS
+		handlePlainDurationUpdate
+	    fi
 	fi
-    else
-	# To avoid printing the last (exit status) line, buffer one line and
-	# lag behind one line with printing.
-	if [ -n "${previousLine+t}" ]; then
-	    printf '%s\n' "$previousLine"
-	fi
-	previousLine="$line"
     fi
     statusLine="$line"
 done < <(
@@ -604,13 +684,18 @@ exec 4>&1 1>&2 2>&4 4>&-
 
 [ -n "${status+t}" ] || status="${statusLine##*$STATUSLINE_PREFIX}"
 
+if [ -n "$timer" ]; then
+    [ -n "${INVOCATIONNOTIFICATION_TIMER_SIGIL_PREFIX}${INVOCATIONNOTIFICATION_TIMER_SIGIL_SUFFIX}" ] &&
+	renderCurrentDuration ||
+	renderedDuration=''
+fi
 if [ -n "$successSigil" -a $status -eq 0 ]; then
-    invokeTargetAddendum "$successSigil"
+    invokeTargetAddendum "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_SIGIL_SUFFIX}$successSigil"
     case "$clear" in
 	all|success) sleep "$INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
-    invokeTargetAddendum "$failSigil"
+    invokeTargetAddendum "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_SIGIL_SUFFIX}$failSigil"
     case "$clear" in
 	all|failure) sleep "$INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY";;
     esac
