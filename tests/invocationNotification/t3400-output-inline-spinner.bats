@@ -2,7 +2,7 @@
 
 load fixture
 load overlay
-load inline
+load inline-sink
 
 @test "single-line output from the command is individually appended / error output rotates the spinner" {
     run invocationNotification --to overlay --message 'message: ' --inline-spinner-stderr --command "$ECHO_COMMAND"
