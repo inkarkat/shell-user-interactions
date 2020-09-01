@@ -8,7 +8,7 @@ load timer
     run invocationNotification --to overlay --message 'message: ' --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}${R}message: 2s${N}${R}message: 4s${N}${R}message: 5s${N}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"${R}message: ${N}${R}message: "[23]"s${N}${R}message: "[45]"s${N}${R}message: "[56]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, ignoring stderr" {
@@ -18,8 +18,8 @@ load timer
     [[ "$output" =~ ^"${R}message: ${N}first
 "(second
 )?"${R}message: 1s${N}"(second
-)?"${R}message: "[234]"s${N}third
-${R}message: "[45]"s${N}fourth
+)?"${R}message: "[234]"s${N}"("${R}message: "[45]"s${N}")?"third
+"("${R}message: "[45]"s${N}")?"fourth
 ${R}message: "[56]"s${N}fifth
 ${R}message: "[67]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
