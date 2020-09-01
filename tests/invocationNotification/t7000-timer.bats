@@ -32,26 +32,23 @@ ${R}message: "[67]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration" {
-skip
     run invocationNotification --to overlay --message 'message: ' --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s5s${E}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [ "$output" = "${R}message: 4s${N}${R}message: 5s${N}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
-skip
     run invocationNotification --to overlay --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 4s5s${E}${E}OK (5s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [ "$output" = "${R}message: 4s${N}${R}message: 5s${N}${R}message: OK (5s)${N}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {
-skip
-    export INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX='' INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX=''
+    export INVOCATIONNOTIFICATION_TIMER_SIGIL_PREFIX='' INVOCATIONNOTIFICATION_TIMER_SIGIL_SUFFIX=''
     run invocationNotification --to overlay --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: "[45]"s"[56]"s${E}${E}OK"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"${R}message: "[45]"s${N}${R}message: "[56]"s${N}${R}message: OK${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
