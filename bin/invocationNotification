@@ -587,9 +587,7 @@ do
 	if [ "$isInline" ]; then
 	    renderDuration
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	    if [ -n "$netLine" ]; then
-		invokeTargetDuration "${INVOCATIONNOTIFICATION_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONNOTIFICATION_TIMER_INLINE_SUFFIX}$netLine"
-	    fi
+	    invokeTargetDuration "${INVOCATIONNOTIFICATION_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONNOTIFICATION_TIMER_INLINE_SUFFIX}$netLine" && lastDuration=$duration
 	elif [ "${#render[@]}" -gt 0 ]; then
 	    [ "$isTimer" ] && renderDuration || renderedDuration=''
 	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
@@ -599,6 +597,7 @@ do
 		netLineAndRender="${netLine}${netLine:+ }${render[$renderCount]}"
 	    fi
 	    if invokeTargetDuration "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$netLineAndRender"; then
+		lastDuration=$duration
 		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
 	    fi
 	else
