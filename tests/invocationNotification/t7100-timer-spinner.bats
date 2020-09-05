@@ -36,5 +36,5 @@ load timer
 "("${R}just a test: ("[678]"s) /${N}"){0,2}"${R}just a test: ("[789]"s) -${N}${R}just a test: ("[89]"s) \\${N}${R}just a test: (1"[01]"s) \\${N}five
 "("${R}just a test: (12s)|${N}")?"six
 "("${R}just a test: (1"[23]"s) |${N}")?"seven
-${R}just a test: (1"[45]"s) |${N}${R}just a test: YES (1"[45]"s)${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+"("${R}just a test: (1"[45]"s) |${N}")?"${R}just a test: YES (1"[45]"s)${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
