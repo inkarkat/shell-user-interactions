@@ -2,7 +2,7 @@
 
 load fixture
 load overlay
-load inline
+load inline-sink
 
 @test "single-line output from the command powers a spinner after the message as the command runs" {
     run invocationNotification --to overlay --message 'message: ' --spinner --command "$ECHO_COMMAND"

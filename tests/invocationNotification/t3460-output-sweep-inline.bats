@@ -2,7 +2,7 @@
 
 load fixture
 load overlay
-load inline
+load inline-sink
 
 @test "multi-line output from the command is individually appended / error output sweeps and final sigil" {
     run invocationNotification --to overlay --message 'message: ' --timespan 0 --sweep-stderr-inline --success OK --command "$BOTH_COMMAND"
