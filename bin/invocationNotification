@@ -590,11 +590,15 @@ do
 	    invokeTargetDuration "${INVOCATIONNOTIFICATION_TIMER_INLINE_PREFIX}${renderedDuration}${INVOCATIONNOTIFICATION_TIMER_INLINE_SUFFIX}$netLine" && lastDuration=$duration
 	elif [ "${#render[@]}" -gt 0 ]; then
 	    [ "$isTimer" ] && renderDuration || renderedDuration=''
-	    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-	    if [ "$isRenderBeforeInline" ]; then
-		netLineAndRender="${render[$renderCount]}${netLine:+ }${netLine}"
+	    if [ "$isInlineWithRender" ]; then
+		netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+		if [ "$isRenderBeforeInline" ]; then
+		    netLineAndRender="${render[$renderCount]}${netLine:+ }${netLine}"
+		else
+		    netLineAndRender="${netLine}${netLine:+ }${render[$renderCount]}"
+		fi
 	    else
-		netLineAndRender="${netLine}${netLine:+ }${render[$renderCount]}"
+		netLineAndRender="${render[$renderCount]}"
 	    fi
 	    if invokeTargetDuration "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$netLineAndRender"; then
 		lastDuration=$duration
