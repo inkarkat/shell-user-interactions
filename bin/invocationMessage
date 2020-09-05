@@ -407,6 +407,11 @@ timeoutReader()
     done
 }
 
+incrementRenderCount()
+{
+    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+}
+
 nonExpiryExitStatus=1
 printMessageRaw()
 {
@@ -554,7 +559,7 @@ do
 		    fi; then
 		    lastDuration=$duration
 		    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
-		    [ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		    [ "$isRenderTimer" ] && incrementRenderCount
 		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
 	    else
@@ -565,7 +570,7 @@ do
 		    fi; then
 		    lastDuration=$duration
 		    sigilPrefix="${render[-1]}${renderedDuration//?/}${renderedDuration:+}${ERASE_TO_END}"
-		    [ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		    [ "$isRenderTimer" ] && incrementRenderCount
 		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
 	    fi
@@ -611,7 +616,7 @@ do
 				printMessageAndResetTimer %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX}" "$netLine" "${render[$renderCount]}"
 			    fi; then
 			    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
-			    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+			    incrementRenderCount
 			    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 			fi
 
@@ -635,7 +640,7 @@ do
 		    else
 			printMessageAndResetTimer %s "${render[-1]}" "${lastRenderedDuration//?/}${lastRenderedDuration:+}" "${renderedDuration}${renderedDuration:+ }${lastRenderedDuration:+$ERASE_TO_END}" "${render[$renderCount]}"
 		    fi; then
-		    let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		    incrementRenderCount
 		    : ${sigilPrefix:="${render[-1]}${lastRenderedDuration//?/}${lastRenderedDuration:+}${lastRenderedDuration//?/ }"}   # Only set when not yet initialized by inline-with-render algorithm above.
 		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }${lastRenderedDuration//?/ }"
 		fi
