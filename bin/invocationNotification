@@ -463,6 +463,11 @@ timeoutReader()
     done
 }
 
+incrementRenderCount()
+{
+    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+}
+
 isTerminalOk=t
 printfToTerminal()
 {
@@ -602,7 +607,7 @@ do
 	    fi
 	    if invokeTargetDuration "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$netLineAndRender"; then
 		lastDuration=$duration
-		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		[ "$isRenderTimer" ] && incrementRenderCount
 	    fi
 	else
 	    handlePlainDurationUpdate
@@ -633,7 +638,7 @@ do
 			stdinAndRender="${stdinLine}${stdinLine:+ }${render[$renderCount]}"
 		    fi
 		    if invokeTargetAndResetTimer "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$stdinAndRender"; then
-			let renderCount=$(((renderCount + 1) % ${#render[@]}))
+			incrementRenderCount
 		    fi
 		else
 		    invokeTargetClear "$line" "$stdinLine"
@@ -650,7 +655,7 @@ do
 
 	    if [ "$netLine" = "$line" ]; then
 		if [ -n "$netLine" ] && invokeTargetAndResetTimer "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}${render[$renderCount]}"; then
-		    let renderCount=$(((renderCount + 1) % ${#render[@]}))
+		    incrementRenderCount
 		fi
 	    else
 		invokeTargetClear "$line" ''
