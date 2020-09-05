@@ -602,7 +602,7 @@ do
 	    fi
 	    if invokeTargetDuration "${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX}$netLineAndRender"; then
 		lastDuration=$duration
-		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % (${#render[@]} - 1)))
+		[ "$isRenderTimer" ] && let renderCount=$(((renderCount + 1) % ${#render[@]}))
 	    fi
 	else
 	    handlePlainDurationUpdate
