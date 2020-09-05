@@ -673,7 +673,7 @@ esac
 hasSigil=
 if [ -n "$timer" ]; then
     [ -n "${INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" ] &&
-	renderedDuration="$(secondsToDuration "$SECONDS")" ||
+	renderCurrentDuration ||
 	renderedDuration=''
 fi
 if [ -n "$successSigil" -a $status -eq 0 ]; then
