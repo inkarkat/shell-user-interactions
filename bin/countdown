@@ -65,7 +65,7 @@ timeWithAdjustmentToSeconds()
     local adjustment="${1##+([0-9.])?([smhd])}"
     local time="${1:0:$((${#1} - ${#adjustment}))}"
     if [ -z "$time" ]; then
-	printf >&2 "ERROR: Empty ${2:-timeout}: %s\\n" "$time"; exit 2;
+	printf >&2 'ERROR: Empty interval: %s\n' "$time"; exit 2;
     fi
     case "$adjustment" in
 	'')			;;
