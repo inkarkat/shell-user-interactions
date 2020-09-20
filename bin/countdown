@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [--interval TIMESPAN[SUFFIX]] NUMBER[SUFFIX] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [--interval TIMESPAN[SUFFIX][ADJUSTMENT]] NUMBER[SUFFIX] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -34,28 +34,87 @@ HELPDESCRIPTION
     --clear-always|-C
 		    Clear TEXT and waiting indication also when the wait has
 		    been aborted by the user (via Ctrl-C).
-    --interval TIMESPAN[SUFFIX]
+    --interval TIMESPAN[SUFFIX][ADJUSTMENT]
 		    Wait TIMESPAN between updates instead of the one second
-		    default.
+		    default. ADJUSTMENT can change the original value after
+		    every iteration. It starts with either + or -, followed by
+		    TIMESPAN, optionally followed by either SUFFIX or %. For
+		    example, 10m+30s starts with 10 minutes and then increases
+		    that by 30 seconds on every iteration. 10-5% starts with 10
+		    seconds and then continually decreases that by 5 percent.
 HELPTEXT
 }
 
 timeToSeconds()
 {
     case "$1" in
+	*([0-9]).+([0-9]))
+	    echo >&2 "ERROR: Floating point interval is not supported here."
+	    exit 2
+	    ;;
 	+([0-9])?(s))   time="${1%s}";;
 	+([0-9])m)	time=$((${1%m} * 60));;
 	+([0-9])h)	time=$((${1%h} * 3600));;
 	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 'ERROR: Illegal timespan: %s\n' "$1"; exit 2;;
+	*)		printf >&2 'ERROR: Illegal interval: %s\n' "$1"; exit 2;;
     esac
     printf %s "$time"
 }
+timeWithAdjustmentToSeconds()
+{
+    local adjustment="${1##+([0-9.])?([smhd])}"
+    local time="${1:0:$((${#1} - ${#adjustment}))}"
+    if [ -z "$time" ]; then
+	printf >&2 "ERROR: Empty ${2:-timeout}: %s\\n" "$time"; exit 2;
+    fi
+    case "$adjustment" in
+	'')			;;
+	[+-]+([0-9])?([smhd%]))	;;
+	*)  printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
+    esac
+    time="$(timeToSeconds "$time" "$2")" || exit $?
+    printf '%s\t%s\n' "$time" "$adjustment"
+}
+adjust()
+{
+    local var="${1?}"; shift
+    local adjustment="$1"; shift
+    eval "local value=\$$var"
+    local newValue
+    case "$adjustment" in
+	'')	    return;;
+	[+-]0?(%))  return;;
+	++([0-9]))  newValue="$((value + ${adjustment#+}))";;
+	-+([0-9]))  newValue="$((value - ${adjustment#-}))";;
+	[+-]+([0-9])%)
+		    # As Bash doesn't support floating point math yet, multiply
+		    # with 100, add the percentage change, and divide back and
+		    # round.
+		    # To avoid that the rounding truncates small changes and
+		    # therefore never lets the real value change, store the cent
+		    # value in a global variable, and re-use that instead.
+		    eval "local centValue=\$${var}CentValue"
+		    [ "$centValue" ] || centValue=$((value * 100))
+
+		    local change=$((${adjustment:1:-1} * value))
+		    [ "${adjustment:0:1}" = '+' ] && let centValue+=$change || let centValue-=$change
+		    newValue=$(((centValue + 50) / 100))
+
+		    eval "${var}CentValue=\$centValue"
+		    ;;
+	*)	    printf >&2 'ASSERT: Invalid adjustment: %s\n' "$adjustment"; exit 3;;
+    esac
+
+    [ $newValue -le 0 ] && newValue=1
+    eval "$var=\$newValue"
+}
+
 
 prefix='Waiting'
 render='ephemereal'
 isClear=
 interval=1
+intervalAdjustment=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -64,7 +123,7 @@ do
 	--clear|-c)	shift; isClear=t;;
 	--clear-always|-C)
 			shift; isClear=t; trap 'clear 2>/dev/null' EXIT;;
-	--interval|-i)	shift; interval="$(timeToSeconds "$1")" || exit $?; shift;;
+	--interval|-i)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r interval intervalAdjustment || exit 2; shift;;
 	--as)		shift; render="$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
@@ -146,6 +205,7 @@ do
     esac
 
     sleep "$interval" || exit $?
+    adjust interval "$intervalAdjustment"
 done
 
 if [ "$isClear" ]; then
