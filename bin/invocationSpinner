@@ -1,10 +1,13 @@
 #!/bin/bash
 
+: ${INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY=0.3}
+: ${INVOCATIONSPINNER_FAIL_DISPLAY_DELAY=1}
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] [-m|--message MESSAGE] [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] [-m|--message MESSAGE [-C|--clear success|failure|all]] [--success SIGIL] [--fail SIGIL] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -12,6 +15,14 @@ printUsage()
     # It is printed to stderr to avoid accidental processing.
     printShortUsage "$1" >&2
     printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+plural()
+{
+    if [ "$1" = 1 ]; then
+	printf %s "${2}${4}"
+    else
+	printf %s "${2}${3:-s}"
+    fi
 }
 printLongUsage()
 {
@@ -25,7 +36,7 @@ HELPDESCRIPTION
     printShortUsage "$1"
     cat <<HELPTEXT
     --or-passthrough	When not connected to a terminal, omit MESSAGE,
-			SIGIL(s), and any inlining or rendering. Basically, just
+			SIGIL(s), and any periodic updates. Basically, just
 			execute COMMAND(s) without interfering in any way.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
@@ -35,11 +46,11 @@ HELPDESCRIPTION
     --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
     --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
 			If --success is also given, will wait for
-			$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY $(plural $INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY second).
+			$INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY $(plural $INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY second).
     --clear|-C failure	Clear the MESSAGE if COMMAND fails, i.e. returns a
 			non-zero exit status.
 			If --fail is also given, will wait for
-			$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY $(plural $INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY second).
+			$INVOCATIONSPINNER_FAIL_DISPLAY_DELAY $(plural $INVOCATIONSPINNER_FAIL_DISPLAY_DELAY second).
     --clear|-C all	Clear the MESSAGE (and the periodic updates) regardless
 			of whether COMMAND succeeds or not. If no MESSAGE has
 			been given, the periodic updates will be cleared
@@ -78,4 +89,6 @@ done
 typeset -a addedArgs=()
 [ "$hasMessage" ] || addedArgs+=(--message '' --clear all)
 
-exec invocationMessage --spinner --timespan 0 --render-timer 1 "${addedArgs[@]}" "${args[@]}" "$@"
+INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY="${INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY}" \
+INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY="${INVOCATIONSPINNER_FAIL_DISPLAY_DELAY}" \
+    exec invocationMessage --spinner --timespan 0 --render-timer 1 "${addedArgs[@]}" "${args[@]}" "$@"
