@@ -371,6 +371,7 @@ case "${timespan}:${initialDelay}${timer:+.}" in
 	;;
 esac
 
+lastLineOnTimeout=
 line=
 duration=0
 lastDuration=0
@@ -386,7 +387,7 @@ timeoutReader()
     do
 	if IFS=$'\n' read -t "$timer" -n 1 -r char; then
 	    if [ -z "$char" ]; then
-		line="${heldChars}"
+		line="$heldChars"
 		heldChars=''
 		return 0
 	    else
@@ -517,6 +518,7 @@ previousStdinLine=
 isFirstStdinLine=t
 let renderCount=0
 commandErrorOutput=
+lastCommandErrorOutputAddedLine=
 teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
 exec 4>&1 1>&2 2>&4 4>&-
 while $reader
@@ -573,6 +575,10 @@ do
 		    [ "$isRenderTimer" ] && incrementRenderCount
 		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
+		if [ "$isCaptureStdout" ]; then
+		    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
+		    [ -n "$netLine" ] && lastLineOnTimeout="$netLine"
+		fi
 	    fi
 	else
 	    handlePlainDurationUpdate
@@ -628,8 +634,10 @@ do
 	    elif [ "$isCaptureStdout" ]; then
 		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
 		if [ -n "$stderrLine" ]; then
+		    [ "$lastLineOnTimeout" = "$lastCommandErrorOutputAddedLine" ] && lastLineOnTimeout=''
 		    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
-}$stderrLine"
+}${lastLineOnTimeout}${lastLineOnTimeout:+$'\n'}$stderrLine"
+		    lastCommandErrorOutputAddedLine="$stderrLine"
 		    netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
 		fi
 	    fi
@@ -653,6 +661,7 @@ do
 		handlePlainDurationUpdate
 	    fi
 	fi
+	lastLineOnTimeout=''
     fi
     statusLine="$line"
 done < <(
