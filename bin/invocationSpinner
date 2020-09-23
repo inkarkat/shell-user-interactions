@@ -63,4 +63,19 @@ HELPTEXT
     printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
 }
 
-exec invocationMessage --spinner --timespan 0 --render-timer 1 "$@"
+hasMessage=
+typeset -a args=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--message|-m)	args+=("$1" "$2"); shift; shift; hasMessage=t;;
+	--)		args+=("$1"); shift; break;;
+	*)		args+=("$1"); shift;;
+    esac
+done
+
+typeset -a addedArgs=()
+[ "$hasMessage" ] || addedArgs+=(--message '' --clear all)
+
+exec invocationMessage --spinner --timespan 0 --render-timer 1 "${addedArgs[@]}" "${args[@]}" "$@"
