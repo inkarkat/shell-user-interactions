@@ -7,7 +7,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] [-m|--message MESSAGE [-C|--clear success|failure|all]] [--success SIGIL] [--fail SIGIL] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] [-m|--message MESSAGE] [--success SIGIL] [--fail SIGIL] [--no-clear|-C|--clear success|failure|all] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -40,10 +40,13 @@ HELPDESCRIPTION
 			execute COMMAND(s) without interfering in any way.
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
-			If omitted, just periodic updates will be printed (and
-			automatically cleared at the end).
+			If omitted, uses the name extracted from COMMAND, and
+			automatically clears everything at the end (unless
+			--(no-)clear overrides that).
     --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
     --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
+    --no-clear		Do not automatically clear the COMMAND name when no
+			MESSAGE is passed.
     --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
 			If --success is also given, will wait for
 			$INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY $(plural $INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY second).
@@ -74,20 +77,35 @@ HELPTEXT
     printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
 }
 
+hasClear=
+isNoClear=
 hasMessage=
+typeset -a commands=()
 typeset -a args=()
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--no-clear)	shift; isNoClear=t;;
+	--clear|-C)	args+=("$1" "$2"); shift; shift; hasClear=t;;
 	--message|-m)	args+=("$1" "$2"); shift; shift; hasMessage=t;;
+	--command|-c)	args+=("$1" "$2"); shift; commands+=(${commands:+;} "$1"); shift;;
+	--or-passthrough)
+			args+=("$1"); shift;;
+	--success|--fail|--initial-delay|-T)
+			args+=("$1" "$2"); shift; shift;;
 	--)		args+=("$1"); shift; break;;
-	*)		args+=("$1"); shift;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
+	*)		break;;
     esac
 done
 
 typeset -a addedArgs=()
-[ "$hasMessage" ] || addedArgs+=(--message '' --clear all)
+if [ ! "$hasMessage" ]; then
+    commandName="$(commandName --no-interpreter --undefined "${commands[*]}$*" ${commands:+--eval} "${commands[@]}" "$@")"
+    addedArgs+=(--message "${commandName}${commandName:+ }")
+    [ ! "$isNoClear" ] && [ ! "$hasClear" ] && addedArgs+=(--clear all)
+fi
 
 INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY="${INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY}" \
 INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY="${INVOCATIONSPINNER_FAIL_DISPLAY_DELAY}" \
