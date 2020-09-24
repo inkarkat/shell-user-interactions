@@ -6,7 +6,7 @@ case of (stdout / stderr) output."
 INVOCATIONSPECIALIZATION_SUCCESS_DISPLAY_DELAY="${INVOCATIONSPINNER_SUCCESS_DISPLAY_DELAY-0.3}"
 INVOCATIONSPECIALIZATION_FAIL_DISPLAY_DELAY="${INVOCATIONSPINNER_FAIL_DISPLAY_DELAY-1}"
 
-INVOCATIONSPECIALIZATION_ARGUMENTS='--spinner'
+INVOCATIONSPECIALIZATION_ARGUMENTS='--spinner --timespan 0 --render-timer 1'
 
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
