@@ -1,0 +1,13 @@
+#!/bin/bash
+
+INVOCATIONSPECIALIZATION_DESCRIPTION="Execute COMMAND while tallying its total running time continuously."
+
+INVOCATIONSPECIALIZATION_SUCCESS_DISPLAY_DELAY="${INVOCATIONTIMER_SUCCESS_DISPLAY_DELAY-0.3}"
+INVOCATIONSPECIALIZATION_FAIL_DISPLAY_DELAY="${INVOCATIONTIMER_FAIL_DISPLAY_DELAY-1}"
+
+INVOCATIONSPECIALIZATION_ARGUMENTS='--timer 1'
+
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 3; }
+
+source "${scriptDir}/../lib/invocationSpecialization.sh"
