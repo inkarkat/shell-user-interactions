@@ -1,7 +1,7 @@
 #!/bin/bash
 shopt -qs extglob
 
-: ${INVOCATIONNOTIFICATION_MESSAGE_MARKER:='{}'}
+: ${INVOCATIONNOTIFICATION_MESSAGE_MARKER='{}'}
 messageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICATION_MESSAGE_MARKER
 : ${INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY=1}
@@ -49,8 +49,8 @@ HELPDESCRIPTION
 			escape sequences in the first line of the terminal.
     --to|-o title	Report in the terminal's window title via ANSI escape
 			sequences.
-    --to|-o command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE
-			while replacing $messageMarker with the message.
+    --to|-o command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE${messageMarker:+
+			while replacing $messageMarker with the message}.
     --to|-o notify	Report via notify-send to the system's notification
 			system.
     --message|-m MESSAGE
