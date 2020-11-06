@@ -23,7 +23,7 @@ printUsage()
     # This is the short help when launched with no or incorrect arguments.
     # It is printed to stderr to avoid accidental processing.
     printShortUsage "$1" >&2
-    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
 }
 plural()
 {
@@ -162,7 +162,7 @@ abortSingleRenderer()
 {
     echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
     echo >&2
-    printShortUsage "$1" >&2
+    printUsage "$1" >&2
     exit 2
 }
 
@@ -206,7 +206,7 @@ do
 			clear="$1"
 			case "$clear" in
 			    success|failure|all)  ;;
-			    *)  { printf 'ERROR: Invalid value for --clear: %s\n' "$clear"; echo; printShortUsage "$0"; } >&2; exit 2;;
+			    *)  { printf 'ERROR: Invalid value for --clear: %s\n' "$clear"; echo; printUsage "$0"; } >&2; exit 2;;
 			esac
 			shift
 			;;
@@ -250,24 +250,24 @@ fi
 if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
     echo
-    printShortUsage "$0"
+    printUsage "$0"
     exit 2
 elif [ -z "${message+t}" ]; then
     echo 'ERROR: Must pass -m|--message MESSAGE.'
     echo
-    printShortUsage "$0"
+    printUsage "$0"
     exit 2
 elif [ "$isInline" ] && [ "${#render[@]}" -gt 0 ]; then
     abortSingleRenderer "$0"
 elif [ -n "${timespan+t}" ] && [ ! "$isInline" ] && [ ${#render[@]} -eq 0 ]; then
     echo 'ERROR: --timespan can only be used in combination with one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr].'
     echo
-    printShortUsage "$0"
+    printUsage "$0"
     exit 2
 elif [ "$isRenderTimer" ] && [ ${#render[@]} -eq 0 ]; then
     echo 'ERROR: --render-timer can only be used in combination with --spinner[-stderr] or --sweep[-stderr].'
     echo
-    printShortUsage "$0"
+    printUsage "$0"
     exit 2
 elif [ ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'

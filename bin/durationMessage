@@ -5,7 +5,9 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [-?|-h|--help]'
+    echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear'
+    echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [-c ...] [--silent-command]] [[--] SIMPLECOMMAND]'
 }
 printUsage()
@@ -13,7 +15,7 @@ printUsage()
     # This is the short help when launched with no or incorrect arguments.
     # It is printed to stderr to avoid accidental processing.
     printShortUsage "$1" >&2
-    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
 }
 printLongUsage()
 {
@@ -75,14 +77,14 @@ multipleActionsError()
 {
     echo >&2 "ERROR: Only one of $ACTIONS allowed."
     echo >&2
-    printShortUsage "$1" >&2
+    printUsage "$1" >&2
     exit 2
 }
 badArgumentError()
 {
     echo >&2 "ERROR: ${1:?}"
     echo >&2
-    printShortUsage "$0" >&2
+    printUsage "$0" >&2
     exit 2
 }
 

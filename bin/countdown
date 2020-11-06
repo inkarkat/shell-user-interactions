@@ -12,7 +12,7 @@ printUsage()
     # This is the short help when launched with no or incorrect arguments.
     # It is printed to stderr to avoid accidental processing.
     printShortUsage "$1" >&2
-    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
 }
 printLongUsage()
 {
@@ -126,12 +126,12 @@ do
 	--interval|-i)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r interval intervalAdjustment || exit 2; shift;;
 	--as)		shift; render="$1"; shift;;
 	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
 if [ $# -ne 1 ]; then
-    printShortUsage "$0" >&2
+    printUsage "$0" >&2
     exit 2
 fi
 delay="$(timeToSeconds "$1")" || exit $?
@@ -189,7 +189,7 @@ case "$render" in
 		    duration=
 		    finalizer='updateDuration "${prefix:+ }$duration" ""'
 		    ;;
-    *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printShortUsage "$0" >&2; exit 2;;
+    *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printUsage "$0" >&2; exit 2;;
 esac
 
 SECONDS=0
