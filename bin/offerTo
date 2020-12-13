@@ -11,7 +11,7 @@ restart the prompt, unless -a|--any-key is given (which then uses the default
 for other keys). The prompt is cleared (unless -k|--keep-prompt is given).
 HELPTEXT
     echo
-    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT [-?|-h|--help]'
+    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT|- [-?|-h|--help]'
 }
 
 keepPromptSequence='[1G[2K' # Return cursor to the beginning of the current line and clear it.
@@ -36,6 +36,7 @@ do
 	--any-key|-a)	shift; isAnyKey=t;;
 	--keep-prompt|-k)	shift; keepPromptSequence=$'\n';;
 	--timeout|-t)	shift; readArgs+=(-t "$1"); timeoutPlural=s; [ "$1" = 1 ] && timeoutPlural=; timeoutValue="${1} second$timeoutPlural"; shift;;
+	-)		break;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -45,7 +46,11 @@ if [ $# -ne 1 ]; then
     printUsage "$0" >&2
     exit 2
 fi
-what="$1"
+if [ "$1" = - ]; then
+    what="$(< /dev/stdin)"
+else
+    what="$1"
+fi
 
 case "$default" in
     0)	choice="${isAnyKey:+*/}${timeout:+[}y${timeout:+]}/n";;
