@@ -45,13 +45,14 @@ if [ $# -ne 1 ]; then
     printUsage "$0" >&2
     exit 2
 fi
+what="$1"
 
 case "$default" in
     0)	choice="${isAnyKey:+*/}${timeout:+[}y${timeout:+]}/n";;
     *)	choice="y/${timeout:+[}n${timeout:+]}${isAnyKey:+/*}";;
 esac
 
-promptText="${1-Do you want to?} (${choice}${timeoutValue:+ within $timeoutValue})"
+promptText="${what:-Do you want to?} (${choice}${timeoutValue:+ within $timeoutValue})"
 status=$default
 while :
 do
