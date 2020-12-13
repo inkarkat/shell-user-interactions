@@ -1,5 +1,4 @@
 #!/bin/bash
-
 shopt -qs extglob
 
 printUsage()
@@ -11,7 +10,8 @@ accepted, or 1 if the user declined. The user has to press y or n; other keys
 restart the prompt, unless -a|--any-key is given (which then uses the default
 for other keys). The prompt is cleared (unless -k|--keep-prompt is given).
 HELPTEXT
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT [-?|-h|--help]'
+    echo
+    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT [-?|-h|--help]'
 }
 
 keepPromptSequence='[1G[2K' # Return cursor to the beginning of the current line and clear it.
