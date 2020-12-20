@@ -59,6 +59,14 @@ case "$default" in
 esac
 
 promptText="${what:-Do you want to?} (${choice}${timeoutValue:+ within $timeoutValue})"
+
+if [[ -n "$keepPromptSequence" && ( ${#promptText} > ${COLUMNS:-80} || "$promptText" =~ $'\n' ) ]]; then
+    # The output spans multiple terminal lines; need to determine how many to be
+    # able to completely clear them.
+    numLines=$(printf '%s' "$promptText" | nowrap --wrap | wc -l)
+    keepPromptSequence="[$((${numLines:-2} - 1))F[0J" # Return cursor to the beginning of the previous $numLines lines and clear to end of screen.
+fi
+
 status=$default
 while :
 do
