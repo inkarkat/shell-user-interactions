@@ -35,7 +35,7 @@ do
 			;;
 	--any-key|-a)	shift; isAnyKey=t;;
 	--keep-prompt|-k)
-			shift; keepPromptSequence=$'\n';;
+			shift; keepPromptSequence=;;
 	--timeout|-t)	shift; readArgs+=(-t "$1"); timeoutPlural=s; [ "$1" = 1 ] && timeoutPlural=; timeoutValue="${1} second$timeoutPlural"; shift;;
 	-)		break;;
 	--)		shift; break;;
@@ -71,5 +71,5 @@ do
     esac
     promptText=
 done
-printf >/dev/tty %s "${keepPromptSequence}"
+printf >/dev/tty %s "${keepPromptSequence:-$'\n'}"
 exit $status
