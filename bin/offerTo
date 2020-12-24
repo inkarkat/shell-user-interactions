@@ -54,11 +54,11 @@ else
 fi
 
 case "$default" in
-    0)	choice="${isAnyKey:+*/}${timeout:+[}y${timeout:+]}/n";;
-    *)	choice="y/${timeout:+[}n${timeout:+]}${isAnyKey:+/*}";;
+    0)	choices="${isAnyKey:+*/}${timeout:+[}y${timeout:+]}/n";;
+    *)	choices="y/${timeout:+[}n${timeout:+]}${isAnyKey:+/*}";;
 esac
-
-promptText="${what:-Do you want to?} (${choice}${timeoutValue:+ within $timeoutValue})"
+fullChoices="(${choices}${timeoutValue:+ within $timeoutValue})"
+promptText="${what:-Do you want to?} $fullChoices"
 
 if [[ -n "$keepPromptSequence" && ( ${#promptText} > ${COLUMNS:-80} || "$promptText" =~ $'\n' ) ]]; then
     # The output spans multiple terminal lines; need to determine how many to be
