@@ -79,5 +79,12 @@ do
     esac
     promptText=
 done
-printf >/dev/tty %s "${clearPromptSequence:-$'\n'}"
+
+updateChoicesSequence=
+if [ -z "$clearPromptSequence" ]; then
+    clearFullChoices="${fullChoices//?/ }"
+    updateChoicesSequence="${fullChoices//?/}${choice,,}${clearFullChoices:0:-1}"
+fi
+
+printf >/dev/tty %s "${updateChoicesSequence}${clearPromptSequence:-$'\n'}"
 exit $status
