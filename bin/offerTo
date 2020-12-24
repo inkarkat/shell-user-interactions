@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT|- [-?|-h|--help]'
+    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-c|--clear-prompt|-k|--keep-prompt] WHAT|- [-?|-h|--help]'
 }
 printUsage()
 {
@@ -36,11 +36,16 @@ HELPDESCRIPTION
     --any-key|-a	Keys other than Y or N are taken as no (or what is set
 			via --default) and conclude the prompt instead of
 			continuing to wait for valid input.
-    --keep-prompt|-k	Keep the prompt and chosen answer on the screen.
+    --clear-prompt|-c	Completely clear the prompt and answer, so that nothing
+			remains to be seen in the terminal of this user
+			interaction.
+    --keep-prompt|-k	Keep the prompt and chosen answer on the screen. This is
+			the default.
 HELPTEXT
 }
 
-clearPromptSequence='[1G[2K' # Return cursor to the beginning of the current line and clear it.
+: ${POS1_AND_ERASE_LINE=[1G[2K}
+clearPromptSequence=
 typeset readArgs=()
 isAnyKey=
 timeout=
@@ -60,6 +65,8 @@ do
 			shift
 			;;
 	--any-key|-a)	shift; isAnyKey=t;;
+	--clear-prompt|-c)
+			shift; clearPromptSequence="$POS1_AND_ERASE_LINE";;
 	--keep-prompt|-k)
 			shift; clearPromptSequence=;;
 	--timeout|-t)	shift; readArgs+=(-t "$1"); timeoutPlural=s; [ "$1" = 1 ] && timeoutPlural=; timeoutValue="${1} second$timeoutPlural"; shift;;
