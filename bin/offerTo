@@ -69,7 +69,8 @@ do
 			shift; clearPromptSequence="$POS1_AND_ERASE_LINE";;
 	--keep-prompt|-k)
 			shift; clearPromptSequence=;;
-	--timeout|-t)	shift; readArgs+=(-t "$1"); timeoutPlural=s; [ "$1" = 1 ] && timeoutPlural=; timeoutValue="${1} second$timeoutPlural"; shift;;
+	--timeout|-t|--for)
+			shift; readArgs+=(-t "$1"); timeoutPlural=s; [ "$1" = 1 ] && timeoutPlural=; timeoutValue="${1} second$timeoutPlural"; shift;;
 	-)		break;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
