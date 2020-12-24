@@ -1,17 +1,43 @@
 #!/bin/bash
 shopt -qs extglob
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT|- [-?|-h|--help]'
+}
 printUsage()
 {
-    cat <<HELPTEXT
-Prompt the user whether to do WHAT (with -t|--timeout: for TIMEOUT seconds;
-defaulting to no or what is set via -d|--default) and return 0 if the user
-accepted, or 1 if the user declined. The user has to press y or n; other keys
-restart the prompt, unless -a|--any-key is given (which then uses the default
-for other keys). The prompt is cleared (unless -k|--keep-prompt is given).
-HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Prompt the user whether to do WHAT and return 0 if the user accepted, or 1 if
+the user declined. The user has to press y or n to conclude the prompt.
+HELPDESCRIPTION
     echo
-    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-k|--keep-prompt] WHAT|- [-?|-h|--help]'
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --default|-d y[es]|n[o]|NUM
+			This is taken as the answer in case of a --timeout, or
+			if --any-key is allowed and something other than Y or N
+			has been pressed.
+    --timeout|-t|--for SECONDS
+			Wait only for SECONDS instead of indefinitely, then
+			return no or what is set via --default.
+    --any-key|-a	Keys other than Y or N are taken as no (or what is set
+			via --default) and conclude the prompt instead of
+			continuing to wait for valid input.
+    --keep-prompt|-k	Keep the prompt and chosen answer on the screen.
+HELPTEXT
 }
 
 clearPromptSequence='[1G[2K' # Return cursor to the beginning of the current line and clear it.
@@ -23,7 +49,7 @@ default=1
 while [ $# -ne 0 ]
 do
     case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--default|-d)	shift
 			case "$1" in
 			    yes|y)	default=0;;
