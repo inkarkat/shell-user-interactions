@@ -3,7 +3,7 @@
 load command
 
 @test "when not being able to execute the command, no clearing will happen and its exit status is returned" {
-    INVOCATIONNOTIFICATION_COMMANDLINE='LANG=C grep nothere /etc/does/not/exist'
+    INVOCATIONNOTIFICATION_COMMANDLINE='LC_ALL=C grep nothere /etc/does/not/exist'
     run invocationNotification --to command --message 'message: ' --clear all echo simplecommand
 
     [ $status -eq 2 ]
