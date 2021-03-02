@@ -124,5 +124,5 @@ if [ -z "$clearPromptSequence" ]; then
     updateChoicesSequence="${fullChoices//?/}${choice,,}${clearFullChoices:0:-${#choice}}"
 fi
 
-printf >/dev/tty %s "${updateChoicesSequence}${clearPromptSequence:-$'\n'}"
+{ printf >/dev/tty %s "${updateChoicesSequence}${clearPromptSequence:-$'\n'}"; } 2>/dev/null
 exit $status
