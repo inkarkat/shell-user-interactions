@@ -106,7 +106,7 @@ status=$default
 while :
 do
     choice="$(userquery -r -s -N 1 "${readArgs[@]}" -p "$promptText")"
-    if [ $? -gt 128 ]; then
+    if [ $? -eq ${USERQUERY_EXIT_STATUS_NO_TERM:-99} -o $? -gt 128 ]; then
 	[ $default -eq 0 ] && choice='(y)' || choice='(n)'
 	break
     fi
