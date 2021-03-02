@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-c|--clear-prompt|-k|--keep-prompt] WHAT|- [-?|-h|--help]'
+    printf 'Usage: [OFFERTO_DEFAULT=NUM] %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-c|--clear-prompt|-k|--keep-prompt] WHAT|- [-?|-h|--help]'
 }
 printUsage()
 {
@@ -29,7 +29,8 @@ HELPDESCRIPTION
     --default|-d y[es]|n[o]|NUM
 			This is taken as the answer in case of a --timeout, or
 			if --any-key is allowed and something other than Y or N
-			has been pressed.
+			has been pressed. Can also be preset (as numeric exit
+			status; 0=yes, 1=no) via OFFERTO_DEFAULT.
     --timeout|-t|--for SECONDS
 			Wait only for SECONDS instead of indefinitely, then
 			return no or what is set via --default.
@@ -50,7 +51,7 @@ typeset readArgs=()
 isAnyKey=
 timeout=
 timeoutValue=
-default=1
+default=${OFFERTO_DEFAULT:-1}
 while [ $# -ne 0 ]
 do
     case "$1" in
