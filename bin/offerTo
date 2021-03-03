@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: [OFFERTO_DEFAULT=NUM] %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-c|--clear-prompt|-k|--keep-prompt] WHAT|- [-?|-h|--help]'
+    printf 'Usage: [OFFERTO_DEFAULT=NUM] %q %s && COMMAND\n' "$(basename "$1")" '[-d|--default y[es]|n[o]|NUM] [-t|--timeout|--for SECONDS] [-a|--any-key] [-c|--clear-prompt|-C|--clear-all-prompt|-k|--keep-prompt] WHAT|- [-?|-h|--help]'
 }
 printUsage()
 {
@@ -38,15 +38,22 @@ HELPDESCRIPTION
     --any-key|-a	Keys other than Y or N are taken as no (or what is set
 			via --default) and conclude the prompt instead of
 			continuing to wait for valid input.
-    --clear-prompt|-c	Completely clear the prompt and answer, so that nothing
-			remains to be seen in the terminal of this user
-			interaction.
+    --clear-prompt|-c	Completely clear the prompt and answer on a proper user
+			answer, so that nothing remains to be seen in the
+			terminal of this user interaction. If the default has
+			been used, the prompt will be kept, to serve as a record
+			of this involuntary choice.
+    --clear-all-prompt|-C
+			Completely clear the prompt and answer, so that nothing
+			remains to be seen in the terminal, even if the default
+			was used.
     --keep-prompt|-k	Keep the prompt and chosen answer on the screen. This is
 			the default.
 HELPTEXT
 }
 
 : ${POS1_AND_ERASE_LINE=[1G[2K}
+isClearAll=
 clearPromptSequence=
 typeset readArgs=()
 isAnyKey=
@@ -69,6 +76,8 @@ do
 	--any-key|-a)	shift; isAnyKey=t;;
 	--clear-prompt|-c)
 			shift; clearPromptSequence="$POS1_AND_ERASE_LINE";;
+	--clear-all-prompt|-C)
+			shift; clearPromptSequence="$POS1_AND_ERASE_LINE"; isClearAll=t;;
 	--keep-prompt|-k)
 			shift; clearPromptSequence=;;
 	--timeout|-t|--for)
@@ -109,6 +118,7 @@ do
     choice="$(userquery -r -s -N 1 "${readArgs[@]}" -p "$promptText")"
     if [ $? -eq ${USERQUERY_EXIT_STATUS_NO_TERM:-99} -o $? -gt 128 ]; then
 	[ $default -eq 0 ] && choice='(y)' || choice='(n)'
+	[ "$isClearAll" ] || clearPromptSequence='' # Default taken due to no terminal or timeout, so keep the prompt.
 	break
     fi
     case "${choice,,}" in
