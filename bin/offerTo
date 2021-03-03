@@ -27,10 +27,11 @@ HELPDESCRIPTION
     echo
     cat <<HELPTEXT
     --default|-d y[es]|n[o]|NUM
-			This is taken as the answer in case of a --timeout, or
-			if --any-key is allowed and something other than Y or N
-			has been pressed. Can also be preset (as numeric exit
-			status; 0=yes, 1=no) via OFFERTO_DEFAULT.
+			This is taken as the answer in case of a --timeout, when
+			the user cannot be queried, or if --any-key is allowed
+			and something other than Y or N has been pressed.
+			Can also be preset (as numeric exit status; 0=yes, 1=no)
+			via OFFERTO_DEFAULT.
     --timeout|-t|--for SECONDS
 			Wait only for SECONDS instead of indefinitely, then
 			return no or what is set via --default.
