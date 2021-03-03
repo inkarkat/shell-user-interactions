@@ -60,6 +60,7 @@ isAnyKey=
 timeout=
 timeoutValue=
 default=${OFFERTO_DEFAULT:-1}
+hasDefault=${OFFERTO_DEFAULT:+t}
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -71,6 +72,7 @@ do
 			    +([0-9]))	default=$1;;
 			    *)		printf >&2 'ERROR: Bad default "%s".\n' "$1"; printUsage "$0" >&2; exit 2;;
 			esac
+			hasDefault=t
 			shift
 			;;
 	--any-key|-a)	shift; isAnyKey=t;;
@@ -135,5 +137,15 @@ if [ -z "$clearPromptSequence" ]; then
     updateChoicesSequence="${fullChoices//?/}${choice,,}${clearFullChoices:0:-${#choice}}"
 fi
 
-{ printf >/dev/tty %s "${updateChoicesSequence}${clearPromptSequence:-$'\n'}"; } 2>/dev/null
+if ! { printf >/dev/tty %s "${updateChoicesSequence}${clearPromptSequence:-$'\n'}"; } 2>/dev/null && \
+    [ "$hasDefault" ] && [ -z "$clearPromptSequence" ]; then
+    # When printing to the terminal fails, the default taken should still be
+    # printed (to stderr), if the user provided a default (so they deem that
+    # important) and no clearing of prompt happens.
+
+    # userquery did not print the question because no terminal is connected to
+    # stdin (or we have terminal input, but could not write to the terminal
+    # somehow); we need to repeat that here (but without the offered choices).
+    printf >&2 '%s %s\n' "$what" "${choice,,}"
+fi
 exit $status
