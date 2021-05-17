@@ -514,7 +514,7 @@ STDIN_END=''
 
 isFirst=t
 sigilPrefix=
-nonSigilnonClearFinalOutput=
+nonSigilNonClearFinalOutput=
 previousStdinLine=
 isFirstStdinLine=t
 let renderCount=0
@@ -563,7 +563,7 @@ do
 		    lastDuration=$duration
 		    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 		    [ "$isRenderTimer" ] && incrementRenderCount
-		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+		    nonSigilNonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
 	    else
 		if if [ "$isFirst" ]; then
@@ -574,7 +574,7 @@ do
 		    lastDuration=$duration
 		    sigilPrefix="${render[-1]}${renderedDuration//?/}${renderedDuration:+}${ERASE_TO_END}"
 		    [ "$isRenderTimer" ] && incrementRenderCount
-		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+		    nonSigilNonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 		fi
 		if [ "$isCaptureStdout" ]; then
 		    netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
@@ -624,7 +624,7 @@ do
 			    fi; then
 			    sigilPrefix="${RESTORE_CURSOR_POSITION}${ERASE_TO_END}${clear:+$message}"
 			    incrementRenderCount
-			    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
+			    nonSigilNonClearFinalOutput="${render[-1]}${render[-1]//?/ }"
 			fi
 
 			previousStdinLine="$stdinLine"
@@ -651,7 +651,7 @@ do
 		    fi; then
 		    incrementRenderCount
 		    : ${sigilPrefix:="${render[-1]}${lastRenderedDuration//?/}${lastRenderedDuration:+}${lastRenderedDuration//?/ }"}   # Only set when not yet initialized by inline-with-render algorithm above.
-		    nonSigilnonClearFinalOutput="${render[-1]}${render[-1]//?/ }${lastRenderedDuration//?/ }"
+		    nonSigilNonClearFinalOutput="${render[-1]}${render[-1]//?/ }${lastRenderedDuration//?/ }"
 		fi
 	    fi
 	else
@@ -716,8 +716,8 @@ if [ "$clear" ] && [ "$hasPrintedMessage" ] && [ \
     hasCleared=t
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1
 fi
-if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$hasPrintedMessage" ] && [ "$nonSigilnonClearFinalOutput" ]; then
-    printfToTerminal %s "$nonSigilnonClearFinalOutput" || status=1
+if [ ! "$hasCleared" ] && [ ! "$hasSigil" ] && [ "$hasPrintedMessage" ] && [ "$nonSigilNonClearFinalOutput" ]; then
+    printfToTerminal %s "$nonSigilNonClearFinalOutput" || status=1
 fi
 if [ -n "$commandErrorOutput" ]; then
     commandErrorOutput="${commandErrorOutput%$'\n'}"
