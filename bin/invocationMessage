@@ -43,6 +43,7 @@ to a terminal).
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
+    echo
     cat <<HELPTEXT
     --or-passthrough	When not connected to a terminal, omit MESSAGE,
 			SIGIL(s), and any inlining or rendering. Basically, just

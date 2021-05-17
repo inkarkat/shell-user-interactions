@@ -27,6 +27,7 @@ escape sequences) throughout multiple invocations by the same client.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
+    echo
     cat <<HELPTEXT
     --initial|-I    The very first call; records the start time (for duration
 		    measurements) and resets the count.

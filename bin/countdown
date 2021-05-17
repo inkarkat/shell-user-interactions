@@ -25,6 +25,7 @@ NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes,
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
+    echo
     cat <<HELPTEXT
     --prefix TEXT   Print TEXT before the remaining wait time.
     --as dot	    Append a period each interval.

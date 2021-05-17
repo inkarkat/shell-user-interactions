@@ -44,6 +44,7 @@ Execute COMMAND while MESSAGE informs the user what is happening elsewhere.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
+    echo
     cat <<HELPTEXT
     --to|-o overlay	Report in the form of overlaid text, written via ANSI
 			escape sequences in the first line of the terminal.
