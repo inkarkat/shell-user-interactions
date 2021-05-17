@@ -16,7 +16,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] [-l|--max-length COLS] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|no-error-output|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] [-l|--max-length COLS] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -58,6 +58,9 @@ HELPDESCRIPTION
 			non-zero exit status.
 			If --fail is also given, will wait for
 			$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY $(plural $INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY second).
+    --clear|-C no-error-output
+			Clear the MESSAGE unless COMMAND had something printed
+			to stderr.
     --clear|-C all	Clear the MESSAGE regardless of whether COMMAND
 			succeeds or not.
     --inline|-i		Each line printed to stdout or stderr by COMMAND is
@@ -205,7 +208,7 @@ do
 	--clear|-C)	shift
 			clear="$1"
 			case "$clear" in
-			    success|failure|all)  ;;
+			    success|failure|no-error-output|all)  ;;
 			    *)  { printf 'ERROR: Invalid value for --clear: %s\n' "$clear"; echo; printUsage "$0"; } >&2; exit 2;;
 			esac
 			shift
@@ -697,13 +700,15 @@ if [ -n "$successSigil" -a $status -eq 0 ]; then
     hasSigil=t
     printMessageAddendum %s "$sigilPrefix" "$successSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
-	all|success) sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
+	all|success)	    sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
+	no-error-output)    [ -z "$commandErrorOutput" ] && sleep "$INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY";;
     esac
 elif [ -n "$failSigil" -a $status -ne 0 ]; then
     hasSigil=t
     printMessageAddendum %s "$sigilPrefix" "$failSigil" "${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX}${renderedDuration}${renderedDuration:+$INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX}" || status=1
     case "$clear" in
-	all|failure) sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
+	all|failure)	    sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
+	no-error-output)    [ -z "$commandErrorOutput" ] && sleep "$INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY";;
     esac
 fi
 
@@ -711,7 +716,8 @@ hasCleared=
 if [ "$clear" ] && [ "$hasPrintedMessage" ] && [ \
     "$clear" = all -o \
     \( "$clear" = success -a $status -eq 0 \) -o \
-    \( "$clear" = failure -a $status -ne 0 \) \
+    \( "$clear" = failure -a $status -ne 0 \) -o \
+    \( "$clear" = no-error-output -a -z "$commandErrorOutput" \) \
     ] ; then
     hasCleared=t
     printfToTerminal %s "${RESTORE_CURSOR_POSITION}${ERASE_TO_END}" || status=1

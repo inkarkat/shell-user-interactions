@@ -23,6 +23,22 @@ load fixture
     [ "$output" = "${S}message: " ]
 }
 
+@test "a successful silent command with clear no-error-output erases" {
+    INVOCATIONMESSAGE_STDERR_TO_TERM=t run invocationMessage --message 'message: ' --clear no-error-output true
+
+    [ $status -eq 0 ]
+    [ "$output" = "${S}message: ${RE}" ]
+}
+
+@test "a successful outputting command with clear no-error-output does not erase" {
+    INVOCATIONMESSAGE_STDERR_TO_TERM=t run invocationMessage --message 'message: ' --clear no-error-output --command "$MULTI_LINE_COMMAND"
+
+    [ $status -eq 0 ]
+    [ "$output" = "${S}message:${SP}
+from command
+more from command" ]
+}
+
 @test "a failing command with clear all erases" {
     run invocationMessage --message 'message: ' --clear all false
 
@@ -42,4 +58,20 @@ load fixture
 
     [ $status -eq 1 ]
     [ "$output" = "${S}message: " ]
+}
+
+@test "a failing silent command with clear no-error-output erases" {
+    INVOCATIONMESSAGE_STDERR_TO_TERM=t run invocationMessage --message 'message: ' --clear no-error-output false
+
+    [ $status -eq 1 ]
+    [ "$output" = "${S}message: ${RE}" ]
+}
+
+@test "a failing outputting command with clear no-error-output does not erase" {
+    INVOCATIONMESSAGE_STDERR_TO_TERM=t run invocationMessage --message 'message: ' --clear no-error-output --command "$MULTI_LINE_COMMAND" --command false
+
+    [ $status -eq 1 ]
+    [ "$output" = "${S}message:${SP}
+from command
+more from command" ]
 }
