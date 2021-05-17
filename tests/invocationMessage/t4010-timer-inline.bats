@@ -22,5 +22,5 @@ load timer
     run invocationMessage --message 'message: ' --success OK --timer 2 --timespan 0 --inline-stderr --command "$SLEEP_FIRST_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: ${S}(2s) ${RE}(4s) ${RE}("[45]"s) fourth${RE}("[56]"s) fifth${RE}(6s) ${RE}OK (7s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: ${S}(2s) ${RE}(4s) ${RE}("[45]"s) fourth${RE}("[56]"s) fifth${RE}(6s) ${RE}OK ("[67]"s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
