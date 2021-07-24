@@ -198,7 +198,7 @@ initial()
 
     local status=0
     if [ "$message" ]; then
-	if ! printMessage "$PRINTED_MESSAGE"; then
+	if ! printMessage '' "$PRINTED_MESSAGE" ''; then
 	    status=1
 	    PRINTED_MESSAGE=
 	fi
@@ -215,7 +215,7 @@ clear()
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     if [ "$printedMessages" ]; then
-	if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+	if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
@@ -234,9 +234,10 @@ finish()
 
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-    local finishMessage="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}$(expandSymbols "$message")${message:+$'\n'}"
-    if [ "$finishMessage" ]; then
-	if printMessage "$finishMessage"; then
+    local finishClear="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}"
+    local finishMessage="$(expandSymbols "$message")"
+    if [ "${finishClear}${finishMessage}" ]; then
+	if printMessage "$finishClear" "$finishMessage" "${message:+$'\n'}"; then
 	    deleteDatabase || status=5
 	else
 	    status=1
@@ -264,7 +265,7 @@ update()
     if [ ${#commands[@]} -gt 0 ]; then
 	if [ ! "$isSilentCommand" ]; then
 	    if [ "$printedMessages" ]; then
-		if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+		if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
 		    PRINTED_MESSAGE=
 		    PRINTED_UPDATE_MESSAGE=
 		    printedMessages=
@@ -291,14 +292,18 @@ update()
     [ -n "${updateMessage+t}" ] && GIVEN_UPDATE_MESSAGE="$updateMessage"
     PRINTED_UPDATE_MESSAGE="$(expandSymbols "$GIVEN_UPDATE_MESSAGE")"
 
-    local updateMessage
+    local updateClear updateMessage updateFinialization
     if [ "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
-	updateMessage="${printedMessages//?/${ERASE}}${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}${printedMessages:+${ERASE_LINE_TO_END}}"
+	updateClear="${printedMessages//?/${ERASE}}"
+	updateMessage="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
+	updateFinialization="${printedMessages:+${ERASE_LINE_TO_END}}"
     else
-	updateMessage="${printedUpdateMessage//?/${ERASE}}${PRINTED_UPDATE_MESSAGE}${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
+	updateClear="${printedUpdateMessage//?/${ERASE}}"
+	updateMessage="${PRINTED_UPDATE_MESSAGE}"
+	updateFinialization="${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
     fi
-    if [ "$updateMessage" ]; then
-	if ! printMessage "$updateMessage"; then
+    if [ "${updateClear}${updateMessage}${updateFinialization}" ]; then
+	if ! printMessage "$updateClear" "$updateMessage" "$updateFinialization"; then
 	    status=1
 	    PRINTED_MESSAGE="$printedMessage"
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
