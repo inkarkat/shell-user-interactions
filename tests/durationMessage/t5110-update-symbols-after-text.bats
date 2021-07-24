@@ -5,9 +5,9 @@ load fixture
 durationMessageWrapper()
 {
     printf 'a prefix:'
-    durationMessage --id ID --initial --message '%TIMESTAMP% now (%COUNT%)'
+    durationMessage --id ID --initial --inline-always --message '%TIMESTAMP% now (%COUNT%)'
     let NOW+=10
-    durationMessage --id ID --update
+    durationMessage --id ID --update --inline-always
 }
 
 @test "updating symbols in message after existing text in a line keeps that text" {

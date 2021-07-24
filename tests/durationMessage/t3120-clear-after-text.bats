@@ -7,8 +7,8 @@ MESSAGE='testing it'
 durationMessageWrapper()
 {
     printf 'a prefix:'
-    durationMessage --id ID --initial --message "$MESSAGE"
-    durationMessage --id ID --clear
+    durationMessage --id ID --initial --inline-always --message "$MESSAGE"
+    durationMessage --id ID --clear --inline-always
 }
 
 @test "clearing after existing text in a line keeps that text" {

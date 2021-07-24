@@ -1,0 +1,98 @@
+#!/bin/bash
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '--baseline-size BYTES|--baseline-file FILE [--override-baseline] [--watch-file WATCH-FILE] [--or-passthrough] [-m|--message MESSAGE] [--success SIGIL] [--fail SIGIL] [--no-clear|-C|--clear success|failure|all] [--spinner|--sweep] [--timer INTERVAL[SUFFIX]] [--eta] [-T|--initial-delay TIMESPAN[SUFFIX]] -c|--command "COMMANDLINE [{}] ..." [...]|[--] SIMPLECOMMAND [{}]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+plural()
+{
+    if [ "$1" = 1 ]; then
+	printf %s "${2}${4}"
+    else
+	printf %s "${2}${3:-s}"
+    fi
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    echo "${INVOCATIONPERCENTAGE_DESCRIPTION:?}"
+    echo
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --baseline-size BYTES
+			Compare the progress of WATCH-FILE buildup to BYTES.
+    --baseline-file FILE
+			Compare the progress of WATCH-FILE buildup to the size
+			of FILE. If this doesn't exist, only rendering and
+			timing of file increases can be done, but no ETA.
+    --override-baseline If COMMAND completes successfully, replace the baseline
+			FILE with WATCH-FILE.
+    --watch-file WATCH-FILE
+			The file that is being monitored and whose file size is
+			compared against the baseline.
+    --or-passthrough	When not connected to a terminal, omit MESSAGE,
+			SIGIL(s), and any periodic updates. Basically, just
+			execute COMMAND(s) without interfering in any way.
+    --message|-m MESSAGE
+			Text describing what COMMAND is doing for the user.
+			If omitted, uses the name extracted from COMMAND, and
+			automatically clears everything at the end (unless
+			--(no-)clear overrides that).
+    --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
+    --fail SIGIL	Append SIGIL after MESSAGE if COMMAND fails.
+    --no-clear		Do not automatically clear the COMMAND name when no
+			MESSAGE is passed.
+    --clear|-C success	Clear the MESSAGE if COMMAND succeeds.
+			If --success is also given, will wait for
+			${INVOCATIONPERCENTAGE_SUCCESS_DISPLAY_DELAY?} $(plural $INVOCATIONPERCENTAGE_SUCCESS_DISPLAY_DELAY second).
+    --clear|-C failure	Clear the MESSAGE if COMMAND fails, i.e. returns a
+			non-zero exit status.
+			If --fail is also given, will wait for
+			${INVOCATIONPERCENTAGE_FAIL_DISPLAY_DELAY?} $(plural $INVOCATIONPERCENTAGE_FAIL_DISPLAY_DELAY second).
+    --clear|-C all	Clear the MESSAGE (and the periodic updates) regardless
+			of whether COMMAND succeeds or not. If no MESSAGE has
+			been given, the periodic updates will be cleared
+			automatically.
+    --spinner		Each time a change in file size is observed, a spinner
+			after MESSAGE rotates once (to indicate that COMMAND is
+			still doing its job).
+    --sweep		Each time a change in file size is observed, a Knight
+			Rider-alike sweeping control changes after MESSAGE (to
+			indicate that COMMAND is still doing its job).
+    --timer INTERVAL[SUFFIX]
+			Append the COMMAND's total running time after MESSAGE
+			every INTERVAL. This provides some form of feedback if
+			COMMAND does not update the WATCH-FILE often.
+    --eta		Append the estimated time until WATCH-FILE reaches the
+			baseline file size, based on the previous file buildup
+			rate.
+    --initial-delay|-T TIMESPAN[SUFFIX]
+			Wait for TIMESPAN before printing the message or
+			appending / spinning / sweeping based on a line, or
+			printing the first total running time. By default, the
+			message is printed immediately. If COMMAND finishes
+			earlier, no message (and SIGIL) get printed at all.
+    --command|-c CMD	Execute the passed command line. When this is a simple
+			command, it can also be passed as such. The string {} is
+			replaced by the WATCH-FILE.
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to write to the terminal.
+    2	Bad invocation, wrong or missing command-line arguments.
+    *   any exit status from COMMAND(s)
+
+Example:
+HELPTEXT
+    printf 'largeFiles=$(%q %s)\n' "$(basename "$1")" 'find / -size +100M'
+}
