@@ -4,11 +4,11 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [-i|--inline-or-none|--inline-or-passthrough|-I|--inline-always] [-?|-h|--help]'
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear [-i|...]'
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-c|--command COMMANDLINE [-c ...] [--silent-command]] [[--] SIMPLECOMMAND]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -U|--update [-M|--update-message U-MESSAGE] [-m|--message MESSAGE] [-i|...] [-c|--command COMMANDLINE [-c ...] [--silent-command]] [[--] SIMPLECOMMAND]'
 }
 printUsage()
 {
@@ -29,27 +29,38 @@ HELPDESCRIPTION
     printShortUsage "$1"
     echo
     cat <<HELPTEXT
-    --initial|-I    The very first call; records the start time (for duration
-		    measurements) and resets the count.
-    --update|-U	    All subsequent calls.
-    --clear|-C	    Clear a previous message (before executing a command outside
-		    of this).
-    --finish|-F	    The final call; clears a previous message / writes the final
-		    message and discards the duration and count records.
-    --id|-i ID	    In order to support multiple concurrent executions, the
-		    client has to be uniquely identified (e.g. pass
-		    PARENT-COMMAND-NAME-\$\$).
+    --initial|-I	The very first call; records the start time (for
+			duration measurements) and resets the count.
+    --update|-U		All subsequent calls.
+    --clear|-C		Clear a previous message (before executing a command
+			outside of this).
+    --finish|-F		The final call; clears a previous message / writes the
+			final message and discards the duration and count
+			records.
+    --id|-i ID		In order to support multiple concurrent executions, the
+			client has to be uniquely identified (e.g. pass
+			PARENT-COMMAND-NAME-\$\$).
     --message|-m MESSAGE
-		    Print / overwrite a previously printed message with MESSAGE.
-		    You can use the following symbols, which will be replaced
-		    with the current values:
-			%COUNT%	    : Number of duration update
-			%DURATION%  : Time elapsed (MM:SS) since the start.
-			%TIMESTAMP% : Date and time of this update.
+			Print / overwrite a previously printed message with
+			MESSAGE. You can use the following symbols, which will
+			be replaced with the current values:
+			    %COUNT%	    : Number of duration update
+			    %DURATION%  : Time elapsed (MM:SS) since the start.
+			    %TIMESTAMP% : Date and time of this update.
     --update-message|-M U-MESSAGE
-		    Append U-MESSAGE to the previously printed MESSAGE on this
-		    update. (Any previously given U-MESSAGE will be overwritten,
-		    but MESSAGE will be kept.)
+			Append U-MESSAGE to the previously printed MESSAGE on
+			this update. (Any previously given U-MESSAGE will be
+			overwritten, but MESSAGE will be kept.)
+    --inline-or-none|-i
+			When not outputting to a terminal, suppress all
+			messages.
+    --inline-or-passthrough
+			Like above, but when not outputting to a terminal,
+			simply print the messages without any cursor
+			repositioning.
+    --inline-always|-I
+			Like above, but also overwrite existing terminal lines
+			even when not outputting to a terminal.
     --command|-c CMD	Execute the passed command line. When this is a simple
 			command, it can also be passed as such. Clears any
 			message and restores it afterwards, so that command
@@ -94,6 +105,7 @@ badArgumentError()
 : ${NOW:=$(date +%s)}
 : ${DURATION_MESSAGE_TIMESTAMP:=%d-%b-%Y %T}
 action=
+printer=printMessage
 id=
 isNeedEval=
 unset message
@@ -112,6 +124,22 @@ do
 	--message|-m)	shift; message="${1//[$'\n\t']/ }"; shift;;
 	--update-message|-M)
 			shift; updateMessage="${1//[$'\n\t']/ }"; shift;;
+	--inline-or-none|-i)
+			shift
+			if [ -t 1 ]; then
+			    printer=printToTerminal
+			else
+			    printer=printNothing
+			fi
+			;;
+	--inline-or-passthrough)
+			shift
+			[ -t 1 ] && printer=printToTerminal
+			;;
+	--inline-always|-I)
+			shift
+			printer=printToTerminal
+			;;
 	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
 	--silent-command)
 			shift; isSilentCommand=t;;
@@ -167,7 +195,20 @@ deleteDatabase()
     database --delete "${id:?}"
 }
 
+printNothing()
+{
+    :
+}
 printMessage()
+{
+    if [ -n "$DURATION_MESSAGE_SINK" ]; then
+	{ printf '%s\n' "$2" >"$DURATION_MESSAGE_SINK"; } 2>/dev/null || return 1
+    else
+	{ printf '%s\n' "$2"; } 2>/dev/null || return 1
+    fi
+}
+
+printToTerminal()
 {
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
@@ -198,7 +239,7 @@ initial()
 
     local status=0
     if [ "$message" ]; then
-	if ! printMessage '' "$PRINTED_MESSAGE" ''; then
+	if ! $printer '' "$PRINTED_MESSAGE" ''; then
 	    status=1
 	    PRINTED_MESSAGE=
 	fi
@@ -215,7 +256,7 @@ clear()
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     if [ "$printedMessages" ]; then
-	if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
+	if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
@@ -237,7 +278,7 @@ finish()
     local finishClear="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}"
     local finishMessage="$(expandSymbols "$message")"
     if [ "${finishClear}${finishMessage}" ]; then
-	if printMessage "$finishClear" "$finishMessage" "${message:+$'\n'}"; then
+	if $printer "$finishClear" "$finishMessage" "${message:+$'\n'}"; then
 	    deleteDatabase || status=5
 	else
 	    status=1
@@ -265,7 +306,7 @@ update()
     if [ ${#commands[@]} -gt 0 ]; then
 	if [ ! "$isSilentCommand" ]; then
 	    if [ "$printedMessages" ]; then
-		if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
+		if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
 		    PRINTED_MESSAGE=
 		    PRINTED_UPDATE_MESSAGE=
 		    printedMessages=
@@ -303,7 +344,7 @@ update()
 	updateFinialization="${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
     fi
     if [ "${updateClear}${updateMessage}${updateFinialization}" ]; then
-	if ! printMessage "$updateClear" "$updateMessage" "$updateFinialization"; then
+	if ! $printer "$updateClear" "$updateMessage" "$updateFinialization"; then
 	    status=1
 	    PRINTED_MESSAGE="$printedMessage"
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
