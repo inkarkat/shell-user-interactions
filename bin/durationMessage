@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [--inline-or-none|--inline-or-passthrough|--inline-always] [-?|-h|--help]'
+    printf 'Usage: [DURATION_MESSAGE_SINK=file] %q %s\n' "$(basename "$1")" '-i|--id ID -I|--initial|-F|--finish [-m|--message MESSAGE] [-M|--update-message U-MESSAGE] [--inline-or-none|--inline-or-passthrough|--inline-always] [-?|-h|--help]'
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" '-i|--id ID -C|--clear [-i|...]'
     echo
@@ -51,7 +51,8 @@ HELPDESCRIPTION
 			Append U-MESSAGE to the previously printed MESSAGE on
 			this update. (Any previously given U-MESSAGE will be
 			overwritten, but MESSAGE will be kept.)
-    --inline-or-none	When not outputting to a terminal, suppress all
+    --inline-or-none	Overwrite a previous MESSAGE instead of accumulating
+			them. When not outputting to a terminal, suppress all
 			messages.
     --inline-or-passthrough
 			Like above, but when not outputting to a terminal,
