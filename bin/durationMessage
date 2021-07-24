@@ -167,11 +167,11 @@ deleteDatabase()
     database --delete "${id:?}"
 }
 
-printfToTerminal()
+printMessage()
 {
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    { printf %s "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
 expandSymbols()
@@ -198,7 +198,7 @@ initial()
 
     local status=0
     if [ "$message" ]; then
-	if ! printfToTerminal '%s' "$PRINTED_MESSAGE"; then
+	if ! printMessage "$PRINTED_MESSAGE"; then
 	    status=1
 	    PRINTED_MESSAGE=
 	fi
@@ -215,7 +215,7 @@ clear()
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     if [ "$printedMessages" ]; then
-	if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+	if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
@@ -236,7 +236,7 @@ finish()
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     local finishMessage="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}$(expandSymbols "$message")${message:+$'\n'}"
     if [ "$finishMessage" ]; then
-	if printfToTerminal '%s' "$finishMessage"; then
+	if printMessage "$finishMessage"; then
 	    deleteDatabase || status=5
 	else
 	    status=1
@@ -264,7 +264,7 @@ update()
     if [ ${#commands[@]} -gt 0 ]; then
 	if [ ! "$isSilentCommand" ]; then
 	    if [ "$printedMessages" ]; then
-		if printfToTerminal '%s' "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
+		if printMessage "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}"; then
 		    PRINTED_MESSAGE=
 		    PRINTED_UPDATE_MESSAGE=
 		    printedMessages=
@@ -298,7 +298,7 @@ update()
 	updateMessage="${printedUpdateMessage//?/${ERASE}}${PRINTED_UPDATE_MESSAGE}${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
     fi
     if [ "$updateMessage" ]; then
-	if ! printfToTerminal '%s' "$updateMessage"; then
+	if ! printMessage "$updateMessage"; then
 	    status=1
 	    PRINTED_MESSAGE="$printedMessage"
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
