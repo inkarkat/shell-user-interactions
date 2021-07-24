@@ -201,10 +201,13 @@ printNothing()
 }
 printMessage()
 {
+    local message="$2"
+    [ -n "$message" ] || return 0
+
     if [ -n "$DURATION_MESSAGE_SINK" ]; then
-	{ printf '%s\n' "$2" >"$DURATION_MESSAGE_SINK"; } 2>/dev/null || return 1
+	{ printf '%s\n' "$message" >>"$DURATION_MESSAGE_SINK"; } 2>/dev/null || return 1
     else
-	{ printf '%s\n' "$2"; } 2>/dev/null || return 1
+	{ printf '%s\n' "$message"; } 2>/dev/null || return 1
     fi
 }
 
@@ -212,7 +215,7 @@ printToTerminal()
 {
     # Print directly to terminal, even if stdout is redirected, ignoring a
     # non-existing terminal.
-    { printf %s "$@" >"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
+    { printf %s "$@" >>"${DURATION_MESSAGE_SINK:-/dev/tty}"; } 2>/dev/null || return 1
 }
 
 expandSymbols()

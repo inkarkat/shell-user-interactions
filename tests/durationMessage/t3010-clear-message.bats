@@ -39,8 +39,8 @@ MESSAGE='testing it'
     [ "$output" = "${MESSAGE//?/}${CLR}" ]
 }
 
-@test "clearing with unavailable sink without inline returns 1" {
+@test "clearing with unavailable sink without inline succeeds because nothing is output" {
     durationMessage --id ID --initial --message "$MESSAGE"
     DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --clear
-    [ $status -eq 1 ]
+    [ $status -eq 0 ]
 }
