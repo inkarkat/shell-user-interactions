@@ -107,7 +107,7 @@ esac
 fullChoices="(${choices}${timeoutValue:+ within $timeoutValue})"
 promptText="${what:-Do you want to?} $fullChoices"
 
-if [[ -n "$clearPromptSequence" && ( ${#promptText} > ${COLUMNS:-80} || "$promptText" =~ $'\n' ) ]]; then
+if [[ -n "$clearPromptSequence" && ( ${#promptText} -gt ${COLUMNS:-80} || "$promptText" =~ $'\n' ) ]]; then
     # The output spans multiple terminal lines; need to determine how many to be
     # able to completely clear them.
     numLines=$(printf '%s' "$promptText" | nowrap --wrap | wc -l)
