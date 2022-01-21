@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [--interval TIMESPAN[SUFFIX][ADJUSTMENT]] NUMBER[SUFFIX] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [-i|--interval TIMESPAN[SUFFIX][ADJUSTMENT]] NUMBER[SUFFIX] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -35,7 +35,7 @@ HELPDESCRIPTION
     --clear-always|-C
 		    Clear TEXT and waiting indication also when the wait has
 		    been aborted by the user (via Ctrl-C).
-    --interval TIMESPAN[SUFFIX][ADJUSTMENT]
+    --interval|-i TIMESPAN[SUFFIX][ADJUSTMENT]
 		    Wait TIMESPAN between updates instead of the one second
 		    default. ADJUSTMENT can change the original value after
 		    every iteration. It starts with either + or -, followed by
