@@ -38,6 +38,11 @@ HELPDESCRIPTION
 			sequences.
     --to|-o command	Update by invoking PROGRESSNOTIFICATION_COMMANDLINE${reportMarker:+
 			while replacing $reportMarker with the report}.
+			After the last report, PROGRESSNOTIFICATION_COMMANDLINE
+			will be invoked${reportMarker:+ without an argument}, or alternatively
+			PROGRESSNOTIFICATION_CLEAR_COMMANDLINE if not empty, or
+			nothing at all if PROGRESSNOTIFICATION_CLEAR_COMMANDLINE
+			is defined but empty.
     --to|-o notify	Update via notify-send to the system's notification
 			system.
     --timespan|-t TIMESPAN[SUFFIX]
@@ -165,10 +170,20 @@ titleTarget()
 commandStatus=0
 commandTarget()
 {
+    if [ $# -eq 0 ] && [ -n "${PROGRESSNOTIFICATION_CLEAR_COMMANDLINE+t}" ]; then
+	if [ -n "$PROGRESSNOTIFICATION_CLEAR_COMMANDLINE" ]; then
+	    local commandLine="$PROGRESSNOTIFICATION_CLEAR_COMMANDLINE"
+	else
+	    return 0
+	fi
+    else
+	local commandLine="$PROGRESSNOTIFICATION_COMMANDLINE"
+    fi
+
     [ $commandStatus -eq 0 ] || return $commandStatus
 
     local quotedArgument=; [ $# -gt 0 ] && printf -v quotedArgument %q "$1"
-    eval "${PROGRESSNOTIFICATION_COMMANDLINE//"$reportMarker"/$quotedArgument}"
+    eval "${commandLine//"$reportMarker"/$quotedArgument}"
     commandStatus=$?
     return $commandStatus
 }
