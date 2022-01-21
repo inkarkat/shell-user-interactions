@@ -3,7 +3,7 @@
 printUsage()
 {
     invocationNotification --help 2>&1 | sed \
-	-e '1s#^.*$#Execute COMMAND while MESSAGE informs the user what is happening in the appendix of the terminal'\''s window title.#' \
+	-e '1s#^.*$#Execute COMMAND while MESSAGE informs the user what is happening in the addendum of the terminal'\''s window title.#' \
 	-e '2b removeFirstParagraphLoop' \
 	-e '/^ *--to|-o/b removeOptionLoop' \
 	-e '/^Usage:$/N' -e '/\(^\|\n\)Usage: */{ s/\(^\|\n\)\(Usage: *\)\?\([^ ]\+ \)*invocationNotification /\1\2'"$(basename "$1")"' /; s/-o|--to [^ ]\+ // }' \
@@ -20,6 +20,6 @@ if ! type -t titleupdate >/dev/null; then
     exit 3
 fi
 
-INVOCATIONNOTIFICATION_POST_COMMANDLINE="titleupdate --id invocationNotificationToAppendix --clear 2>/dev/null" \
-INVOCATIONNOTIFICATION_COMMANDLINE="titleupdate --id invocationNotificationToAppendix {}" \
+INVOCATIONNOTIFICATION_POST_COMMANDLINE="titleupdate --id invocationNotificationToAddendum --clear 2>/dev/null" \
+INVOCATIONNOTIFICATION_COMMANDLINE="titleupdate --id invocationNotificationToAddendum {}" \
 exec invocationNotification --to command "$@"
