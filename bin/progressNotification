@@ -282,19 +282,21 @@ case "${timespan}${initialDelay}" in
 	}
 	;;
     *.*)
+	: ${DATE:=date}
+
 	resetTime()
 	{
 	    if [ $# -eq 0 ]; then
-		IFS='.' read startEpoch startNanos <<<"$(date +%s.%N)"
+		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
 	    else
-		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$(date +%s.%N)" "${1:-0}" "${2:-0}")"
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
 	    fi
 	}
 	case "$timespan" in
 	    *.*)
 		isExpired()
 		{
-		    IFS='.' read endEpoch endNanos <<<"$(date +%s.%N)"
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
 		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
 		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
 		}
@@ -302,7 +304,7 @@ case "${timespan}${initialDelay}" in
 	    *)
 		isExpired()
 		{
-		    IFS='.' read endEpoch endNanos <<<"$(date +%s.%N)"
+		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
 		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
 		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
 		}
