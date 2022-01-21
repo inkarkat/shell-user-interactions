@@ -39,10 +39,11 @@ HELPDESCRIPTION
 		    Wait TIMESPAN between updates instead of the one second
 		    default. ADJUSTMENT can change the original value after
 		    every iteration. It starts with either + or -, followed by
-		    TIMESPAN, optionally followed by either SUFFIX or %. For
-		    example, 10m+30s starts with 10 minutes and then increases
-		    that by 30 seconds on every iteration. 10-5% starts with 10
-		    seconds and then continually decreases that by 5 percent.
+		    another TIMESPAN, optionally followed by either SUFFIX or %.
+		    For example, 10m+30s starts with 10 minutes and then
+		    increases that by 30 seconds on every iteration. 10-5%
+		    starts with 10 seconds and then continually decreases that
+		    by 5 percent.
 HELPTEXT
 }
 
