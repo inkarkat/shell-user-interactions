@@ -70,9 +70,11 @@ timeWithAdjustmentToSeconds()
 	printf >&2 'ERROR: Empty interval: %s\n' "$time"; exit 2;
     fi
     case "$adjustment" in
-	'')			;;
-	[+-]+([0-9])?([smhd%]))	;;
-	*)  printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
+	'')		    ;;
+	[+-]+([0-9])?(%))   ;;
+	++([0-9])[smhd])    adjustment="+$(timeToSeconds "${adjustment#+}" adjustment)" || return $?;;
+	-+([0-9])[smhd])    adjustment="-$(timeToSeconds "${adjustment#-}" adjustment)" || return $?;;
+	*)		    printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
     esac
     time="$(timeToSeconds "$time" "$2")" || exit $?
     printf '%s\t%s\n' "$time" "$adjustment"
