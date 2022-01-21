@@ -32,3 +32,15 @@
     [ $status -eq 2 ]
     [ "$output" = "ERROR: Illegal adjustment: x" ]
 }
+
+@test "missing percentage prints message" {
+    run progressNotification --to overlay --percentage
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Need numeric MAX_COUNT for --percentage." ]
+}
+
+@test "non-numeric percentage prints message" {
+    run progressNotification --to overlay --percentage foo42
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Need numeric MAX_COUNT for --percentage." ]
+}
