@@ -12,7 +12,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-o|--to overlay|title|command|notify [-t|--timespan TIMESPAN[SUFFIX]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-n|--count WHAT] [-p|--percentage END-COUNT] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-o|--to overlay|title|command|notify [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-n|--count WHAT] [-p|--percentage END-COUNT] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -45,13 +45,14 @@ HELPDESCRIPTION
 			is defined but empty.
     --to|-o notify	Update via notify-send to the system's notification
 			system.
-    --timespan|-t TIMESPAN[SUFFIX]
+    --timespan|-t TIMESPAN[SUFFIX][ADJUSTMENT]
 			Update every TIMESPAN instead of every second.
 			SUFFIX may be 'ms' for milliseconds, 's' for seconds
 			(the default), 'm' for minutes, 'h' for hours or 'd' for
 			days. ADJUSTMENT can change the original value after
 			every iteration. It starts with either + or -, followed
-			by TIMESPAN, optionally followed by either SUFFIX or %.
+			by another TIMESPAN, optionally followed by either
+			SUFFIX or %.
 			For example, 10m+30s starts with 10 minutes and then
 			increases that by 30 seconds on every iteration. 10-5%
 			starts with 10 seconds and then continually decreases
