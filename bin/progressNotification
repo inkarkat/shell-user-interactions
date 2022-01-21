@@ -245,6 +245,15 @@ if [ -z "$target" ]; then
     printUsage "$1"
     exit 2
 fi
+
+trap onExit EXIT
+postTargetCommandLine=
+onExit()
+{
+    [ ! "$hasInvokedTarget" ] || "$target" || status=$?
+    [ -z "$postTargetCommandLine" ] || eval "$postTargetCommandLine" || status=$?
+}
+
 if [ "$target" = 'commandTarget' ]; then
     if [ -z "$PROGRESSNOTIFICATION_COMMANDLINE" ]; then
 	echo 'ERROR: Command notification must define PROGRESSNOTIFICATION_COMMANDLINE.'
@@ -253,9 +262,7 @@ if [ "$target" = 'commandTarget' ]; then
     if [ -n "$PROGRESSNOTIFICATION_PRE_COMMANDLINE" ]; then
 	eval "$PROGRESSNOTIFICATION_PRE_COMMANDLINE" || exit $?
     fi
-    if [ -n "$PROGRESSNOTIFICATION_POST_COMMANDLINE" ]; then
-	trap "$PROGRESSNOTIFICATION_POST_COMMANDLINE" EXIT
-    fi
+    postTargetCommandLine="$PROGRESSNOTIFICATION_POST_COMMANDLINE"
 elif [ "$target" = 'notifyTarget' ]; then
     if [ -z "$PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE" ] && ! which "$PROGRESSNOTIFICATION_NOTIFY_SEND" >/dev/null 2>&1; then
 	printf 'ERROR: notify-send command (%s) not found.\n' "$PROGRESSNOTIFICATION_NOTIFY_SEND"
@@ -374,7 +381,4 @@ do
 	isFirstExpiry=
     fi
 done
-if [ "$hasInvokedTarget" ]; then
-    "$target" || status=$?
-fi
 exit $status
