@@ -1,0 +1,356 @@
+#!/bin/bash
+shopt -qs extglob
+
+: ${PROGRESSNOTIFICATION_REPORT_MARKER='{}'}
+reportMarker="$PROGRESSNOTIFICATION_REPORT_MARKER"; unset PROGRESSNOTIFICATION_REPORT_MARKER
+: ${PROGRESSNOTIFICATION_COUNT_PREFIX=' ('}
+: ${PROGRESSNOTIFICATION_COUNT_SUFFIX=')'}
+: ${PROGRESSNOTIFICATION_PERCENTAGE_PREFIX=' ('}
+: ${PROGRESSNOTIFICATION_PERCENTAGE_SUFFIX=')'}
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-o|--to overlay|title|command|notify [-t|--timespan TIMESPAN[SUFFIX]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-n|--count WHAT] [-p|--percentage END-COUNT] [-?|-h|--help]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Update the user on the progress reports read from standard input.
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --to|-o overlay	Update in the form of overlaid text, written via ANSI
+			escape sequences in the first line of the terminal.
+    --to|-o title	Update in the terminal's window title via ANSI escape
+			sequences.
+    --to|-o command	Update by invoking PROGRESSNOTIFICATION_COMMANDLINE${reportMarker:+
+			while replacing $reportMarker with the report}.
+    --to|-o notify	Update via notify-send to the system's notification
+			system.
+    --timespan|-t TIMESPAN[SUFFIX]
+			Update every TIMESPAN instead of every second.
+			SUFFIX may be 'ms' for milliseconds, 's' for seconds
+			(the default), 'm' for minutes, 'h' for hours or 'd' for
+			days. ADJUSTMENT can change the original value after
+			every iteration. It starts with either + or -, followed
+			by TIMESPAN, optionally followed by either SUFFIX or %.
+			For example, 10m+30s starts with 10 minutes and then
+			increases that by 30 seconds on every iteration. 10-5%
+			starts with 10 seconds and then continually decreases
+			that by 5 percent.
+    --initial-delay|-T TIMESPAN[SUFFIX]
+			Wait for TIMESPAN before the first update. By default,
+			the first line of progress is reported immediately.
+    --count|-n WHAT	Append the total count to the update (prefixed by WHAT).
+    --precentage|-p END-COUNT
+			Assume a total of END-COUNT progress reports and append
+			the current percentage to the update.
+EXIT STATUS:
+    0	Complete success.
+    1	Failed to notify.
+    2	Bad invocation, wrong or missing command-line arguments.
+
+Example:
+HELPTEXT
+    printf '%q %s\n' "$(basename "$1")" '--foo bar /tmp/foobar'
+}
+
+timeToSeconds()
+{
+    case "$1" in
+	+([0-9])ms)	if [ -n "$adjustment" ]; then
+			    echo >&2 'ERROR: Cannot combine millisecond interval with adjustment.'
+			    exit 2
+			fi
+			time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}"
+			;;
+	+([0-9])?(s))   time="${1%s}";;
+	+([0-9])m)	time=$((${1%m} * 60));;
+	+([0-9])h)	time=$((${1%h} * 3600));;
+	+([0-9])d)	time=$((${1%d} * 86400));;
+	*)		printf >&2 'ERROR: Illegal timespan: %s\n' "$1"; exit 2;;
+    esac
+    printf %s "$time"
+}
+timeWithAdjustmentToSeconds()
+{
+    local adjustment="${1##+([0-9])?([smhd]|ms)}"
+    local time="${1:0:$((${#1} - ${#adjustment}))}"
+    if [ -z "$time" ]; then
+	printf >&2 'ERROR: Empty timespan: %s\n' "$time"; exit 2;
+    fi
+    case "$adjustment" in
+	'')			;;
+	[+-]+([0-9])?([smhd%]))	;;
+	*)  printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
+    esac
+    time="$(timeToSeconds "$time" "$2")" || exit $?
+    printf '%s\t%s\n' "$time" "$adjustment"
+}
+adjust()
+{
+    local var="${1?}"; shift
+    local adjustment="$1"; shift
+    eval "local value=\$$var"
+    local newValue
+    case "$adjustment" in
+	'')	    return;;
+	[+-]0?(%))  return;;
+	++([0-9]))  newValue="$((value + ${adjustment#+}))";;
+	-+([0-9]))  newValue="$((value - ${adjustment#-}))";;
+	[+-]+([0-9])%)
+		    # As Bash doesn't support floating point math yet, multiply
+		    # with 100, add the percentage change, and divide back and
+		    # round.
+		    # To avoid that the rounding truncates small changes and
+		    # therefore never lets the real value change, store the cent
+		    # value in a global variable, and re-use that instead.
+		    eval "local centValue=\$${var}CentValue"
+		    [ "$centValue" ] || centValue=$((value * 100))
+
+		    local change=$((${adjustment:1:-1} * value))
+		    [ "${adjustment:0:1}" = '+' ] && let centValue+=$change || let centValue-=$change
+		    newValue=$(((centValue + 50) / 100))
+
+		    eval "${var}CentValue=\$centValue"
+		    ;;
+	*)	    printf >&2 'ASSERT: Invalid adjustment: %s\n' "$adjustment"; exit 3;;
+    esac
+
+    [ $newValue -lt 0 ] && newValue=0
+    # Use this instead if no delay at all does not make sense.
+    #[ $newValue -le 0 ] && newValue=1
+    eval "$var=\$newValue"
+}
+
+singleTargetCheck()
+{
+    if [ "$target" ]; then
+	echo "ERROR: There can be only one --to."
+	echo
+	printUsage "$1"
+	exit 2
+    fi >&2
+}
+
+overlayTarget()
+{
+    if [ $# -eq 0 ]; then
+	printfToTerminal %s "$PROGRESSNOTIFICATION_OVERLAY_JUMP" "$ERASE_LINE_TO_END" "$PROGRESSNOTIFICATION_OVERLAY_RETURN"
+    else
+	printfToTerminal %s "$PROGRESSNOTIFICATION_OVERLAY_JUMP" "$PROGRESSNOTIFICATION_OVERLAY_PREFIX" "$1" "$PROGRESSNOTIFICATION_OVERLAY_SUFFIX" "$ERASE_LINE_TO_END" "$PROGRESSNOTIFICATION_OVERLAY_RETURN"
+    fi
+}
+titleTarget()
+{
+    if [ $# -eq 0 ]; then
+	printfToTerminal %s "$PROGRESSNOTIFICATION_TITLE_SET" "$PROGRESSNOTIFICATION_TITLE_FINISH"
+    else
+	printfToTerminal %s "$PROGRESSNOTIFICATION_TITLE_SET" "$PROGRESSNOTIFICATION_TITLE_PREFIX" "$1" "$PROGRESSNOTIFICATION_TITLE_SUFFIX" "$PROGRESSNOTIFICATION_TITLE_FINISH"
+    fi
+}
+commandStatus=0
+commandTarget()
+{
+    [ $commandStatus -eq 0 ] || return $commandStatus
+
+    local quotedArgument=; [ $# -gt 0 ] && printf -v quotedArgument %q "$1"
+    eval "${PROGRESSNOTIFICATION_COMMANDLINE//"$reportMarker"/$quotedArgument}"
+    commandStatus=$?
+    return $commandStatus
+}
+notifyTarget()
+{
+    [ $# -eq 0 ] && return 0	# A notification cannot be cleared; it'll disappear automatically or be acknowledged by the user.
+
+    commandTarget "$@"
+}
+
+: ${SAVE_CURSOR_POSITION=[s}
+: ${RESTORE_CURSOR_POSITION=[u}
+: ${ERASE_LINE_TO_END=[0K}
+: ${OVERLAY_POSITION=[1;1H}
+: ${PROGRESSNOTIFICATION_OVERLAY_JUMP=${SAVE_CURSOR_POSITION}${OVERLAY_POSITION}}
+: ${PROGRESSNOTIFICATION_OVERLAY_PREFIX=[37;44m[}
+: ${PROGRESSNOTIFICATION_OVERLAY_SUFFIX=][0m}
+: ${PROGRESSNOTIFICATION_OVERLAY_RETURN=${RESTORE_CURSOR_POSITION}}
+case "$TERM" in
+    screen*)
+	: ${PROGRESSNOTIFICATION_TITLE_SET=']2;'}
+	: ${PROGRESSNOTIFICATION_TITLE_FINISH='\'}
+	;;
+    linux)
+	# The Linux kernel console doesn't have a title, as it runs full-screen.
+	printf >&2 'ERROR: Cannot drive terminal title with TERM=%s\n' "$TERM"
+	exit 3
+	;;
+    *)
+	: ${PROGRESSNOTIFICATION_TITLE_SET=']2;'}
+	: ${PROGRESSNOTIFICATION_TITLE_FINISH=''}
+	;;
+esac
+: ${PROGRESSNOTIFICATION_TITLE_PREFIX=[}
+: ${PROGRESSNOTIFICATION_TITLE_SUFFIX=]}
+: ${PROGRESSNOTIFICATION_NOTIFY_SEND:=notify-send}
+target=
+timespan=1
+timespanAdjustment=
+initialDelay=0
+unset countWhat
+endCount=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--to|-o)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s\n' "$1"; echo; printUsage "$0"; exit 2; fi >&2; shift;;
+	--count|-n)	shift; countWhat="$1"; shift;;
+	--percentage|-p)
+			shift; endCount="$1"; shift;;
+	--timespan|-t)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r timespan timespanAdjustment || exit 2; shift;;
+	--initial-delay|-T)
+			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ -z "$target" ]; then
+    echo 'ERROR: No --to target passed.'
+    echo
+    printUsage "$1"
+    exit 2
+fi
+if [ "$target" = 'commandTarget' ]; then
+    if [ -z "$PROGRESSNOTIFICATION_COMMANDLINE" ]; then
+	echo 'ERROR: Command notification must define PROGRESSNOTIFICATION_COMMANDLINE.'
+	exit 2
+    fi
+    if [ -n "$PROGRESSNOTIFICATION_PRE_COMMANDLINE" ]; then
+	eval "$PROGRESSNOTIFICATION_PRE_COMMANDLINE" || exit $?
+    fi
+    if [ -n "$PROGRESSNOTIFICATION_POST_COMMANDLINE" ]; then
+	trap "$PROGRESSNOTIFICATION_POST_COMMANDLINE" EXIT
+    fi
+elif [ "$target" = 'notifyTarget' ]; then
+    if [ -z "$PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE" ] && ! which "$PROGRESSNOTIFICATION_NOTIFY_SEND" >/dev/null 2>&1; then
+	printf 'ERROR: notify-send command (%s) not found.\n' "$PROGRESSNOTIFICATION_NOTIFY_SEND"
+	exit 2
+    fi
+    : ${PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE:="\"$PROGRESSNOTIFICATION_NOTIFY_SEND\"${PROGRESSNOTIFICATION_NOTIFY_ARGUMENTS:+ $PROGRESSNOTIFICATION_NOTIFY_ARGUMENTS} -- $reportMarker"}
+
+    # Reuse the commandTarget for this specialization.
+    PROGRESSNOTIFICATION_COMMANDLINE="$PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE"
+fi >&2
+
+case "${timespan}${initialDelay}" in
+    0:0)
+	resetTime()
+	{
+	    :
+	}
+	isExpired()
+	{
+	    :
+	}
+	;;
+    *.*)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		IFS='.' read startEpoch startNanos <<<"$(date +%s.%N)"
+	    else
+		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$(date +%s.%N)" "${1:-0}" "${2:-0}")"
+	    fi
+	}
+	case "$timespan" in
+	    *.*)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$(date +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
+		}
+		;;
+	    *)
+		isExpired()
+		{
+		    IFS='.' read endEpoch endNanos <<<"$(date +%s.%N)"
+		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
+		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
+		}
+		;;
+	esac
+	;;
+    *)
+	resetTime()
+	{
+	    if [ $# -eq 0 ]; then
+		SECONDS=0
+	    else
+		SECONDS=$((${1:-0} - ${2:-0}))
+	    fi
+	}
+	isExpired()
+	{
+	    [ $SECONDS -ge $timespan ]
+	}
+	;;
+esac
+
+isTerminalOk=t
+printfToTerminal()
+{
+    [ "$isTerminalOk" ] || return 1
+
+    # Print directly to terminal, even if stdout is redirected, ignoring a
+    # non-existing terminal.
+    if ! { printf "$@" >> "${PROGRESSNOTIFICATION_SINK:-/dev/tty}"; } 2>/dev/null; then
+	isTerminalOk=
+	return 1
+    fi
+}
+
+
+resetTime "$timespan" "$initialDelay"
+status=0
+hasInvokedTarget=
+let count=0
+isFirstExpiry=t
+
+while IFS=$'\n' read -r line || [ -n "$line" ]
+do
+    let count+=1
+
+    if isExpired; then
+	report="$line"
+	if [ -n "${countWhat+t}" ]; then
+	    report="${report}${PROGRESSNOTIFICATION_COUNT_PREFIX}${countWhat}${countWhat:+ }${count}${PROGRESSNOTIFICATION_COUNT_SUFFIX}"
+	fi
+	if [ -n "$endCount" ]; then
+	    report="${report}${PROGRESSNOTIFICATION_PERCENTAGE_PREFIX}$((100 * count / endCount))%${PROGRESSNOTIFICATION_PERCENTAGE_SUFFIX}"
+	fi
+
+	"$target" "$report" && hasInvokedTarget=t || status=$?
+
+	resetTime
+	[ "$isFirstExpiry" ] || adjust timespan "$timespanAdjustment"
+	isFirstExpiry=
+    fi
+done
+if [ "$hasInvokedTarget" ]; then
+    "$target" || status=$?
+fi
+exit $status
