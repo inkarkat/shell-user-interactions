@@ -8,7 +8,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-o|--to overlay|title|command|notify [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-n|--count WHAT] [-p|--percentage END-COUNT] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '-o|--to overlay|title|command|notify [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -56,10 +56,14 @@ HELPDESCRIPTION
     --initial-delay|-T TIMESPAN[SUFFIX]
 			Wait for TIMESPAN before the first update. By default,
 			the first line of progress is reported immediately.
-    --count|-n WHAT	Append the total count to the update (prefixed by WHAT).
-    --precentage|-p END-COUNT
+    --append-count|-c|--prepend-count|-C WHAT
+			Append / prepend the total count to the update (prefixed
+			by WHAT).
+    --count-to END-COUNT
+			When counting, include the final (expected) END-COUNT.
+    --append-precentage|-p|--prepend-percentage|-P END-COUNT
 			Assume a total of END-COUNT progress reports and append
-			the current percentage to the update.
+			/ prepend the current percentage to the update.
 EXIT STATUS:
     0	Complete success.
     1	Failed to notify.
@@ -221,21 +225,38 @@ target=
 timespan=1
 timespanAdjustment=
 initialDelay=0
+isCountPrepend=
 unset countWhat
-endCount=
+endCountCount=
+isPercentagePrepend=
+endCountPercentage=
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--to|-o)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s\n' "$1"; echo; printUsage "$0"; exit 2; fi >&2; shift;;
-	--count|-n)	shift; countWhat="$1"; shift;;
-	--percentage|-p)
-			shift
-			if ! [[ "$1" =~ ^[0-9]+$ ]]; then
-			    echo >&2 'ERROR: Need numeric MAX_COUNT for --percentage.'
+	--prepend-count|-C)
+			isCountPrepend=t;&
+	--append-count|-c)
+			shift; countWhat="$1"; shift;;
+	--count-to)
+			if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+			    printf >&2 'ERROR: Need numeric END_COUNT for %s.\n' "$1"
 			    exit 2
 			fi
-			endCount="$1"
+			shift
+			endCountCount="$1"
+			shift
+			;;
+	--prepend-percentage|-P)
+			isPercentagePrepend=t;&
+	--append-percentage|-p)
+			if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+			    printf >&2 'ERROR: Need numeric END_COUNT for %s.\n' "$1"
+			    exit 2
+			fi
+			shift
+			endCountPercentage="$1"
 			shift
 			;;
 	--timespan|-t)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r timespan timespanAdjustment || exit 2; shift;;
@@ -281,15 +302,15 @@ elif [ "$target" = 'notifyTarget' ]; then
     PROGRESSNOTIFICATION_COMMANDLINE="$PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE"
 fi >&2
 
-: ${PROGRESSNOTIFICATION_COUNT_PREFIX=' ('}
-if [ -n "${countWhat+t}" -a -n "$endCount" ]; then
-    : ${PROGRESSNOTIFICATION_COUNT_SUFFIX=''}
-    : ${PROGRESSNOTIFICATION_PERCENTAGE_PREFIX=' / '}
-else
-    : ${PROGRESSNOTIFICATION_COUNT_SUFFIX=')'}
-    : ${PROGRESSNOTIFICATION_PERCENTAGE_PREFIX=' ('}
-fi
-: ${PROGRESSNOTIFICATION_PERCENTAGE_SUFFIX=')'}
+: ${PROGRESSNOTIFICATION_COUNT_WITH_TOTAL='/'}
+: ${PROGRESSNOTIFICATION_PREPEND_COUNT_PREFIX=''}
+: ${PROGRESSNOTIFICATION_PREPEND_COUNT_SUFFIX=': '}
+: ${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_PREFIX=''}
+: ${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_SUFFIX=': '}
+: ${PROGRESSNOTIFICATION_APPEND_COUNT_PREFIX=' ('}
+: ${PROGRESSNOTIFICATION_APPEND_COUNT_SUFFIX=')'}
+: ${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_PREFIX=' ('}
+: ${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_SUFFIX=')'}
 
 case "${timespan}${initialDelay}${DATE:+.}" in	# Testing: Switch to fractional time when DATE is defined because the testing hook is only available there.
     0:0)
@@ -374,11 +395,19 @@ do
 
     if isExpired; then
 	report="$line"
+
 	if [ -n "${countWhat+t}" ]; then
-	    report="${report}${PROGRESSNOTIFICATION_COUNT_PREFIX}${countWhat}${countWhat:+ }${count}${PROGRESSNOTIFICATION_COUNT_SUFFIX}"
+	    renderedCount="${countWhat}${countWhat:+ }${count}${endCountCount:+${PROGRESSNOTIFICATION_COUNT_WITH_TOTAL}${endCountCount}}"
+	    [ "$isCountPrepend" ] && \
+		report="${PROGRESSNOTIFICATION_PREPEND_COUNT_PREFIX}${renderedCount}${PROGRESSNOTIFICATION_PREPEND_COUNT_SUFFIX}${report}" || \
+		report="${report}${PROGRESSNOTIFICATION_APPEND_COUNT_PREFIX}${renderedCount}${PROGRESSNOTIFICATION_APPEND_COUNT_SUFFIX}"
 	fi
-	if [ -n "$endCount" ]; then
-	    report="${report}${PROGRESSNOTIFICATION_PERCENTAGE_PREFIX}$((100 * count / endCount))%${PROGRESSNOTIFICATION_PERCENTAGE_SUFFIX}"
+
+	if [ -n "$endCountPercentage" ]; then
+	    renderedPercentage="$((100 * count / endCountPercentage))%"
+	    [ "$isPercentagePrepend" ] && \
+		report="${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_PREFIX}${renderedPercentage}${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_SUFFIX}${report}" ||  \
+		report="${report}${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_PREFIX}${renderedPercentage}${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_SUFFIX}"
 	fi
 
 	"$target" "$report" && hasInvokedTarget=t || status=$?

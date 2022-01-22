@@ -33,14 +33,26 @@
     [ "$output" = "ERROR: Illegal adjustment: x" ]
 }
 
-@test "missing percentage prints message" {
-    run progressNotification --to overlay --percentage
+@test "missing count-to number prints message" {
+    run progressNotification --to overlay --append-count stuff --count-to
     [ $status -eq 2 ]
-    [ "$output" = "ERROR: Need numeric MAX_COUNT for --percentage." ]
+    [ "$output" = "ERROR: Need numeric END_COUNT for --count-to." ]
+}
+
+@test "non-numeric count-to prints message" {
+    run progressNotification --to overlay --prepend-count stuff --count-to foo42
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Need numeric END_COUNT for --count-to." ]
+}
+
+@test "missing percentage prints message" {
+    run progressNotification --to overlay --append-percentage
+    [ $status -eq 2 ]
+    [ "$output" = "ERROR: Need numeric END_COUNT for --append-percentage." ]
 }
 
 @test "non-numeric percentage prints message" {
-    run progressNotification --to overlay --percentage foo42
+    run progressNotification --to overlay --prepend-percentage foo42
     [ $status -eq 2 ]
-    [ "$output" = "ERROR: Need numeric MAX_COUNT for --percentage." ]
+    [ "$output" = "ERROR: Need numeric END_COUNT for --prepend-percentage." ]
 }
