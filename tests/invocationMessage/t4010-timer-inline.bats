@@ -24,3 +24,11 @@ load timer
     [ $status -eq 0 ]
     [[ "$output" =~ ^"message: ${S}(2s) ${RE}(4s) ${RE}("[45]"s) fourth${RE}("[56]"s) fifth${RE}(6s) ${RE}OK ("[67]"s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command with --timer --inline-stderr returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timer 2 --timespan 0 --inline-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

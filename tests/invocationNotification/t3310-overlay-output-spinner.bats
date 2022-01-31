@@ -118,3 +118,8 @@ stdout
 stdout again" ]
     assert_sink "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: OK${N}${C}"
 }
+
+@test "a failing silent command with --spinner returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --spinner false
+    [ $status -eq 1 ]
+}

@@ -81,3 +81,11 @@ foo
 last" ]
     assert_sink "message: [*   ][-*  ][ -* ][  -*]${S}foo [   *][  *-][ *- ][*-  ]${RE}second [*   ][-*  ]${RE}third argument [ -* ]${RE}immediate fourth [  -*][   *][  *-][ *- ]${RE}foo [*-  ][*   ]${RE}last [-*  ][ -* ]      "
 }
+
+@test "a failing silent command with --inline-sweep-stderr returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timespan 0 --inline-sweep-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "" ]
+}

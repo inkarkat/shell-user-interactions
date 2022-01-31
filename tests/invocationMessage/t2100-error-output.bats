@@ -86,3 +86,11 @@ more from command" ]
     [ "$output" = "${S}message: OK${RE}from command
 more from command" ]
 }
+
+@test "a failing silent command returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

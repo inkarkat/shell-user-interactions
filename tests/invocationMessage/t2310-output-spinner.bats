@@ -101,3 +101,11 @@ stderr
 stderr again" ]
     assert_sink "${S}message: /-\\|OK${RE}"
 }
+
+@test "a failing silent command with --spinner returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timespan 0 --spinner false
+
+    [ $status -eq 1 ]
+    [ "$output" = "" ]
+}

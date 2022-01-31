@@ -25,3 +25,8 @@ load timer
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: |${N}${R}message: /${N}${R}message: OK (7s)${N}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command with --render-timer --spinner-stderr returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --render-timer 2 --timespan 0 --spinner-stderr false
+    [ $status -eq 1 ]
+}

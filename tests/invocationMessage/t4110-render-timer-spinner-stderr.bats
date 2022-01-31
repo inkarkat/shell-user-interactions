@@ -23,3 +23,11 @@ load timer
     [ $status -eq 0 ]
     [ "$output" = "message: /-\|/${E}OK (7s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command with --render-timer returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --render-timer 2 --timespan 0 --spinner-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

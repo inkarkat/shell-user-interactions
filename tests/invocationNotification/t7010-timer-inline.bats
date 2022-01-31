@@ -24,3 +24,8 @@ load timer
     [ $status -eq 0 ]
     [[ "$output" =~ ^"${R}message: ${N}${R}message: (2s) ${N}${R}message: (4s) ${N}${R}message: ("[45]"s) fourth${N}${R}message: ("[56]"s) fifth${N}"("${R}message: (6s) ${N}")?"${R}message: OK (7s)${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command with --timer --inline-stderr returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --timer 2 --timespan 0 --inline-stderr false
+    [ $status -eq 1 ]
+}

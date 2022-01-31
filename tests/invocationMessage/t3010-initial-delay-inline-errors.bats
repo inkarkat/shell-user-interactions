@@ -33,3 +33,11 @@ load delayer
     [ $status -eq 0 ]
     [ "$output" = "${S}message: 3${RE}message: 4${RE}message: 5${RE}" ]
 }
+
+@test "a failing silent command with --initial-delay and --inline-stderr returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --initial-delay 1250ms --timespan 0 --inline-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "" ]
+}

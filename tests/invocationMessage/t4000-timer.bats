@@ -49,3 +49,11 @@ fifth"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
     [ $status -eq 0 ]
     [[ "$output" =~ ^"message: "[45]"s"[56]"s${E}${E}OK"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command with --timer returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timer 2 false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

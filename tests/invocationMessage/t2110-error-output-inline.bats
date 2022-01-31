@@ -65,3 +65,11 @@ load inline
     [ $status -eq 0 ]
     [ "$output" = "message: ${S}first${RE}last" ]
 }
+
+@test "a failing silent command with --inline-stderr returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timespan 0 --inline-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

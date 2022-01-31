@@ -51,3 +51,11 @@ load delayer
     [ $status -eq 0 ]
     [ "$output" = "${S}message: 1${RE}message: 4${RE}message: 7${RE}message: OK${RE}" ]
 }
+
+@test "a failing silent command with --timespan returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timespan 1500ms --inline-stderr false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}

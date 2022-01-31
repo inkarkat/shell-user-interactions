@@ -51,3 +51,8 @@ load delayer
     [ $status -eq 0 ]
     [ "$output" = "${R}message: ${N}${R}message: 1${N}${R}message: 4${N}${R}message: 7${N}${R}message: OK${N}${C}" ]
 }
+
+@test "a failing silent command with --timespan --inline-stderr returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --timespan 1000ms --inline-stderr false
+    [ $status -eq 1 ]
+}

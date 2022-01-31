@@ -80,3 +80,11 @@ stdout again" ]
 stdout again" ]
      assert_sink "${S}message: stderr${RE}message: stderr again${RE}message: stdout${RE}message: stdout again${RE}message: OK${RE}"
 }
+
+@test "a failing silent command with --inline returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --message "$NO_OUTPUT" --timespan 0 --inline false
+
+    [ $status -eq 1 ]
+    [ "$output" = "" ]
+}

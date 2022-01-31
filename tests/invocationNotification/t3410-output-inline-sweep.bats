@@ -81,3 +81,8 @@ foo
 last" ]
     assert_sink "${R}message: ${N}${R}message: [*   ]${N}${R}message: [-*  ]${N}${R}message: [ -* ]${N}${R}message: [  -*]${N}${R}message: foo [   *]${N}${R}message: foo [  *-]${N}${R}message: foo [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: second [*   ]${N}${R}message: second [-*  ]${N}${R}message: third argument [ -* ]${N}${R}message: immediate fourth [  -*]${N}${R}message: immediate fourth [   *]${N}${R}message: immediate fourth [  *-]${N}${R}message: immediate fourth [ *- ]${N}${R}message: foo [*-  ]${N}${R}message: foo [*   ]${N}${R}message: last [-*  ]${N}${R}message: last [ -* ]${N}${R}message: last${N}"
 }
+
+@test "a failing silent command with --inline-sweep-stderr returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --timespan 0 --inline-sweep-stderr false
+    [ $status -eq 1 ]
+}

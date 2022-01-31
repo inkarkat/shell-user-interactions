@@ -52,3 +52,8 @@ ${R}message: "[67]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \
     [ $status -eq 0 ]
     [[ "$output" =~ ^"${R}message: "[45]"s${N}${R}message: "[56]"s${N}${R}message: OK${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
+
+@test "a failing silent command wiht --timer returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --timer 2 false
+    [ $status -eq 1 ]
+}

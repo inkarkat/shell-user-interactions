@@ -31,3 +31,8 @@ bar
 bar" ]
     assert_sink "${R}message: ${N}${R}message: / foo${N}${R}message: - bar${N}${R}message: \\${N}${R}message: | bar${N}${R}message: bar${N}"
 }
+
+@test "a failing silent command with --spinner-stderr-inline returns its exit status" {
+    run invocationNotification --to overlay --message "message: " --spinner-stderr-inline false
+    [ $status -eq 1 ]
+}

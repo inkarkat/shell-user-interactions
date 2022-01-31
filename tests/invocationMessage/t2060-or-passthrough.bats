@@ -10,3 +10,11 @@ load fixture
 simplecommand
 ${RE}" ]
 }
+
+@test "a failing silent command with passthrough returns its exit status" {
+    NO_OUTPUT="message: "
+    run invocationMessage --or-passthrough --message "$NO_OUTPUT" false
+
+    [ $status -eq 1 ]
+    [ "$output" = "$NO_OUTPUT" ]
+}
