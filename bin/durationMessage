@@ -72,7 +72,7 @@ EXIT STATUS:
     0	Complete success.
     1	Failed to write to the terminal.
     2	Bad invocation, wrong or missing command-line arguments.
-    3	Internal error or failed assertion. TODO
+    3	Internal error or failed assertion.
     4	The passed ID does not exist.
     5	Database access failed.
     * any exit status from COMMANDS
