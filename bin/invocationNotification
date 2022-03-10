@@ -12,8 +12,14 @@ messageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICA
 : ${INVOCATIONNOTIFICATION_TIMER_RENDER_SUFFIX=) }
 : ${INVOCATIONNOTIFICATION_TIMER_SIGIL_PREFIX= (}
 : ${INVOCATIONNOTIFICATION_TIMER_SIGIL_SUFFIX=)}
-typeset -a SPINNER=(/ - \\ \|)
-typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]')
+
+: ${INVOCATIONNOTIFICATION_SPINNER=${SPINNER:-'/-\|'}}
+[[ "$INVOCATIONNOTIFICATION_SPINNER" =~ ${INVOCATIONNOTIFICATION_SPINNER//?/(.)} ]]
+typeset -a spinner=("${BASH_REMATCH[@]:1}")
+
+: ${INVOCATIONNOTIFICATION_SWEEPS=${SWEEPS:-'[    ],[*   ],[-*  ],[ -* ],[  -*],[   *],[  *-],[ *- ],[*-  ]'}}
+IFS=, read -r -a sweeps <<<"$INVOCATIONNOTIFICATION_SWEEPS"
+sweeps=("${sweeps[@]:1}")   # We don't use the initial (sweep start) rendering, but immediately start sweeping.
 
 printShortUsage()
 {
@@ -278,21 +284,21 @@ do
 	--inline-stderr)
 			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}");;
 	--inline-spinner-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--spinner-stderr-inline)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
 	--sweep)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}");;
 	--inline-sweep-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--sweep-stderr-inline)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t; isInlineWithRender=t; isRenderBeforeInline=t;;
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
