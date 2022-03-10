@@ -18,6 +18,9 @@ export E='[0J'
 export RE="${R}${E}"
 export SP=' '
 
+unset INVOCATIONMESSAGE_SPINNER SPINNER
+unset INVOCATIONMESSAGE_SWEEPS SWEEPS
+
 assertNoDelay()
 {
     export INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=11

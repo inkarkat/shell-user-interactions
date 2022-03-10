@@ -10,8 +10,14 @@ shopt -qs extglob
 : ${INVOCATIONMESSAGE_TIMER_RENDER_SUFFIX=) }
 : ${INVOCATIONMESSAGE_TIMER_SIGIL_PREFIX= (}
 : ${INVOCATIONMESSAGE_TIMER_SIGIL_SUFFIX=)}
-typeset -a SPINNER=(/ - \\ \| '')
-typeset -a SWEEPS=('[*   ]' '[-*  ]' '[ -* ]' '[  -*]' '[   *]' '[  *-]' '[ *- ]' '[*-  ]' '')
+
+: ${INVOCATIONMESSAGE_SPINNER=${SPINNER:-'/-\|'}}
+[[ "$INVOCATIONMESSAGE_SPINNER" =~ ${INVOCATIONMESSAGE_SPINNER//?/(.)} ]]
+typeset -a spinner=("${BASH_REMATCH[@]:1}" '')
+
+: ${INVOCATIONMESSAGE_SWEEPS=${SWEEPS:-'[    ],[*   ],[-*  ],[ -* ],[  -*],[   *],[  *-],[ *- ],[*-  ]'}}
+IFS=, read -r -a sweeps <<<"$INVOCATIONMESSAGE_SWEEPS"
+sweeps=("${sweeps[@]:1}" "${sweeps[0]//?/}")   # We use the initial (sweep start) rendering only for determining the number of characters used by the sweep.
 
 printShortUsage()
 {
@@ -219,17 +225,17 @@ do
 	--inline-stderr)
 			shift; [ "$isInline" ] && abortSingleRenderer "$0"; isInline=t;;
 	--spinner)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}"); isCaptureStdout=t;;
 	--spinner-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}");;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}");;
 	--inline-spinner-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SPINNER[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${spinner[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--sweep)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t;;
 	--sweep-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}");;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}");;
 	--inline-sweep-stderr)
-			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${SWEEPS[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
+			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
 	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
