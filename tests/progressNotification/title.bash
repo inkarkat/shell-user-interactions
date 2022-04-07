@@ -9,6 +9,6 @@ case "$TERM" in
     *)
 	readonly R=']2;['
 	readonly N=']'
-	readonly C=']2;'
+	readonly C=']2;'
 	;;
 esac
