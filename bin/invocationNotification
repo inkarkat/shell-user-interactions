@@ -455,7 +455,7 @@ timeoutReader()
 		heldChars=''
 		return 0
 	    else
-		heldChars="${heldChars}$char"
+		heldChars+="$char"
 		continue
 	    fi
 	elif [ $? -gt 128 ]; then

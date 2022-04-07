@@ -171,7 +171,7 @@ updateDuration()
     if [ $durationDiffCnt -gt 0 ]; then
 	cleaner="                    "
 	cleaner="${cleaner:0:$durationDiffCnt}"
-	cleaner="${cleaner}${cleaner//?/}"
+	cleaner+="${cleaner//?/}"
     fi
     printf '%s%s%s' "${previousDuration//?/}" "$duration" "$cleaner"
 }

@@ -403,7 +403,7 @@ timeoutReader()
 		heldChars=''
 		return 0
 	    else
-		heldChars="${heldChars}$char"
+		heldChars+="$char"
 		continue
 	    fi
 	elif [ $? -gt 128 ]; then
@@ -553,7 +553,7 @@ do
 	    [ "$isTimer" ] && renderDuration || renderedDuration=''
 	    if [ "$isInlineWithRender" ]; then
 		netLine="${line%${STATUSLINE_PREFIX}+([0-9])}"
-		netLine="${netLine}${netLine:+ }"
+		netLine+="${netLine:+ }"
 		if if [ -z "$renderedDuration" ] && [ "$isFirstStdinLine" ]; then
 			undoRender="${render[-1]}"; [ "$isFirst" ] && undoRender=
 			if [ "$clear" ]; then
@@ -647,8 +647,7 @@ do
 		stderrLine="${netLine//${STDIN_START}*${STDIN_END}/}"
 		if [ -n "$stderrLine" ]; then
 		    [ "$lastLineOnTimeout" = "$lastCommandErrorOutputAddedLine" ] && lastLineOnTimeout=''
-		    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
-}${lastLineOnTimeout}${lastLineOnTimeout:+$'\n'}$stderrLine"
+		    commandErrorOutput+="${commandErrorOutput:+$'\n'}${lastLineOnTimeout}${lastLineOnTimeout:+$'\n'}$stderrLine"
 		    lastCommandErrorOutputAddedLine="$stderrLine"
 		    netLine="${netLine//$STDIN_START/}"; netLine="${netLine//$STDIN_END/}"
 		fi
@@ -666,8 +665,7 @@ do
 		fi
 	    fi
 	else
-	    commandErrorOutput="${commandErrorOutput}${commandErrorOutput:+
-}$line"
+	    commandErrorOutput+="${commandErrorOutput:+$'\n'}$line"
 	    if [ -n "$timer" -a $lastDuration -ne $SECONDS ]; then
 		duration=$SECONDS
 		handlePlainDurationUpdate

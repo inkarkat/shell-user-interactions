@@ -400,14 +400,14 @@ do
 	    renderedCount="${countWhat}${countWhat:+ }${count}${endCountCount:+${PROGRESSNOTIFICATION_COUNT_WITH_TOTAL}${endCountCount}}"
 	    [ "$isCountPrepend" ] && \
 		report="${PROGRESSNOTIFICATION_PREPEND_COUNT_PREFIX}${renderedCount}${PROGRESSNOTIFICATION_PREPEND_COUNT_SUFFIX}${report}" || \
-		report="${report}${PROGRESSNOTIFICATION_APPEND_COUNT_PREFIX}${renderedCount}${PROGRESSNOTIFICATION_APPEND_COUNT_SUFFIX}"
+		report+="${PROGRESSNOTIFICATION_APPEND_COUNT_PREFIX}${renderedCount}${PROGRESSNOTIFICATION_APPEND_COUNT_SUFFIX}"
 	fi
 
 	if [ -n "$endCountPercentage" ]; then
 	    renderedPercentage="$((100 * count / endCountPercentage))%"
 	    [ "$isPercentagePrepend" ] && \
 		report="${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_PREFIX}${renderedPercentage}${PROGRESSNOTIFICATION_PREPEND_PERCENTAGE_SUFFIX}${report}" ||  \
-		report="${report}${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_PREFIX}${renderedPercentage}${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_SUFFIX}"
+		report+="${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_PREFIX}${renderedPercentage}${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_SUFFIX}"
 	fi
 
 	"$target" "$report" && hasInvokedTarget=t || status=$?
