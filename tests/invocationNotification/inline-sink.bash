@@ -12,6 +12,5 @@ assert_sink() {
 
 
 dump_sink() {
-    local sinkContents="$(prefix '#' "$INVOCATIONNOTIFICATION_SINK" | trcontrols)"
-    printf >&3 '%s\n' "$sinkContents"
+    prefix '#' "$INVOCATIONNOTIFICATION_SINK" | trcontrols >&3
 }

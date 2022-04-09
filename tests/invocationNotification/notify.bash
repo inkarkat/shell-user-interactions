@@ -21,6 +21,5 @@ assert_runs() {
 }
 
 dump_runs() {
-    local runsContents="$(prefix '#' "$RUNS")"
-    printf >&3 '%s\n' "$runsContents"
+    prefix '#' "$RUNS" >&3
 }
