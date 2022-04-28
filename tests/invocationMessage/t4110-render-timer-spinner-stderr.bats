@@ -21,7 +21,7 @@ load timer
     run invocationMessage --message 'message: ' --success OK --render-timer 2 --timespan 0 --spinner-stderr --command "$SLEEP_FIRST_COMMAND"
 
     [ $status -eq 0 ]
-    [ "$output" = "message: /-\|/${E}OK (7s)" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: /-\|"("/")?"${E}OK (7s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "a failing silent command with --render-timer returns its exit status" {
