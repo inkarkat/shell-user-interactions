@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$RUNS" ]; then
+if [ $# -gt 1 ]; then
     # Invoked by the application-under-test
     printf %s\\n "$*" >> "$RUNS"
     exit 0
