@@ -7,7 +7,7 @@ load timer
     run invocationMessage --message 'message: ' --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 2s4s${E}5s${E}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: "[23]"s"[45]"s${E}"[56]"s${E}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, ignoring stderr" {
@@ -32,7 +32,7 @@ fifth"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
     run invocationMessage --message 'message: ' --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: "[45]s""[56]s"${E}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: "[45]s(""[56]s"${E}")?$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {

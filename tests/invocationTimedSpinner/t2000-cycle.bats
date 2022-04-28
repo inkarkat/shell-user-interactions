@@ -7,7 +7,7 @@ load ../invocationMessage/timer
     run invocationTimedSpinner --message 'message: ' --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"message: /"(1s -[12]s "${E}"|-[12]s )"\\"[23]"s ${E}|"[34]"s ${E}/"[45]"s ${E}-"[56]"s ${E}\"[67]"s ${E}|"[67]"s ${E}/ first
+    [[ "$output" =~ ^"message: /"(1s -[12]s "${E}"|-[12]s )"\\"[23]"s ${E}|"[34]"s ${E}/"[45]"s ${E}-"[56]"s ${E}\\"[567]"s ${E}|"[67]"s ${E}/ first
 second
 third
 fourth

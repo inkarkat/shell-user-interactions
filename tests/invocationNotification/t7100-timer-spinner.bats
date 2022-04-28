@@ -8,7 +8,7 @@ load timer
     run invocationNotification --to overlay --message 'message: ' --timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"${R}message: ${N}${R}message: /${N}${R}message: "(\(1s\)\ )?"-${N}${R}message: ("[12]"s) \\${N}${R}message: ("[234]"s) |${N}${R}message: ("[345]"s) |${N}${R}message: ("[56]"s) /${N}${R}message: ("[56]"s) -${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"${R}message: ${N}${R}message: "(\(1s\)\ )?"/${N}${R}message: "(\(1s\)\ )?"-${N}${R}message: ("[12]"s) \\${N}${R}message: ("[234]"s) |${N}${R}message: ("[345]"s) |${N}${R}message: ("[56]"s) /${N}${R}message: ("[56]"s) -${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds and error output powers a spinner and then sigil" {
