@@ -7,14 +7,14 @@ load ../invocationMessage/timer
     run invocationTimer --message 'message: ' sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "message: 1s2s${E}3s${E}4s${E}5s${E}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^"message: "[12]"s"[23]"s${E}"[34]"s${E}"[45]"s${E}"[56]"s${E}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "timer with empty message prevents the synthesis and default clearing" {
     run invocationTimer --message '' sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "1s2s${E}3s${E}4s${E}5s${E}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^[12]"s"[23]"s${E}"[34]"s${E}"[45]"s${E}"[56]"s${E}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "timer without message every second synthesizes the message from the simple command and clears at the end" {
