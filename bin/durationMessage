@@ -44,7 +44,7 @@ HELPDESCRIPTION
 			Print / overwrite a previously printed message with
 			MESSAGE. You can use the following symbols, which will
 			be replaced with the current values:
-			    %COUNT%	    : Number of duration update
+			    %COUNT%     : Number of duration update
 			    %DURATION%  : Time elapsed (MM:SS) since the start.
 			    %TIMESTAMP% : Date and time of this update.
     --update-message|-M U-MESSAGE
@@ -76,6 +76,7 @@ EXIT STATUS:
     4	The passed ID does not exist.
     5	Database access failed.
     * any exit status from COMMANDS
+
 Example:
 HELPTEXT
     printf '%q %s\n' "$(basename "$1")" '-i foo-$$ --initial -m "Frobnizing"'
