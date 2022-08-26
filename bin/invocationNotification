@@ -624,7 +624,7 @@ STATUSLINE_PREFIX='#-#'
 STDIN_START=''
 STDIN_END=''
 
-teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >> /dev/stderr)"; fi
+teeStdoutCommand=; [ "$isCaptureStdout" ] && if [ ${#render[@]} -eq 0 ]; then teeStdoutCommand='tee -a /dev/stderr'; else teeStdoutCommand="tee >(sed --unbuffered 's/.*/${STDIN_START}&${STDIN_END}/' >&2)"; fi
 stdinLine=
 let renderCount=0
 unset previousLine
@@ -722,9 +722,9 @@ do
 done < <(
     (
 	if [ "$isNeedEval" ]; then
-	    eval 'eval "${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
+	    eval 'eval "${commands[@]}"' "${teeStdoutCommand:+|}$teeStdoutCommand"
 	else
-	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
+	    eval '"${commands[@]}"' "${teeStdoutCommand:+|}$teeStdoutCommand"
 	fi 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONNOTIFICATION_SYNC_DELAY:-0.01}}
