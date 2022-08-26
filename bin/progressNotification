@@ -21,8 +21,8 @@ printShortUsage()
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
     local IFS='|'
-    local extensionList="${!extensionNames[*]}"
-    printf 'Usage: %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionList:+|}${extensionList} [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
+    local extensionNameList="${extensions[*]##*/}"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
 }
 printUsage()
 {
