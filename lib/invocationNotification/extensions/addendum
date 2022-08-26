@@ -1,0 +1,15 @@
+#!/bin/bash source-this-script
+
+if ! type -t titleupdate >/dev/null; then
+    echo >&2 'ERROR: titleupdate is not available.'
+    return 3
+elif [ -z "$TERMID" ]; then
+    echo >&2 'ERROR: Cannot notify via titleupdate; TERMID not defined.'
+    return 3
+fi
+
+extensionsLongUsages+=("    --to|-o addendum    Report via the addendum of the terminal's window
+			title.")
+INVOCATIONNOTIFICATION_POST_COMMANDLINE="titleupdate --id invocationNotificationToAddendum --clear 2>/dev/null"
+INVOCATIONNOTIFICATION_COMMANDLINE="titleupdate --id invocationNotificationToAddendum {}"
+target=commandTarget

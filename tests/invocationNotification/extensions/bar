@@ -1,0 +1,4 @@
+#!/bin/bash source-this-script
+
+extensionsLongUsages+=("    --to|-o bar    Synonym for overlay")
+target=overlayTarget

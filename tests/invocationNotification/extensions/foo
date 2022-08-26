@@ -1,0 +1,5 @@
+#!/bin/bash source-this-script
+
+extensionsLongUsages+=("    --to|-o foo    Update via foo")
+INVOCATIONNOTIFICATION_COMMANDLINE="echo foo"
+target=commandTarget

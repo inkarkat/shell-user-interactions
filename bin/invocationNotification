@@ -1,6 +1,6 @@
 #!/bin/bash
 set -o pipefail
-shopt -qs extglob
+shopt -qs extglob nullglob
 
 : ${INVOCATIONNOTIFICATION_MESSAGE_MARKER='{}'}
 messageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICATION_MESSAGE_MARKER
@@ -21,11 +21,25 @@ typeset -a spinner=("${BASH_REMATCH[@]:1}")
 IFS=, read -r -a sweeps <<<"$INVOCATIONNOTIFICATION_SWEEPS"
 sweeps=("${sweeps[@]:1}")   # We don't use the initial (sweep start) rendering, but immediately start sweeping.
 
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
+readonly projectDir="${scriptDir}/.."
+: ${INVOCATIONNOTIFICATION_EXTENSIONS_DIR="${projectDir}/lib/$(basename -- "${BASH_SOURCE[0]}")/extensions"}
+typeset -a extensions=()
+typeset -A extensionNames=()
+for element in "${INVOCATIONNOTIFICATION_EXTENSIONS_DIR}"/*
+do
+    extensions+=("$element")
+    extensionNames["${element##*/}"]="$element"
+done
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '-m|--message MESSAGE -o|--to overlay|title|command|notify [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr|--spinner-stderr-inline|--sweep-stderr-inline [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    local IFS='|'
+    local extensionNameList="${extensions[*]##*/}"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "-m|--message MESSAGE -o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr|--spinner-stderr-inline|--sweep-stderr-inline [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND"
 }
 printUsage()
 {
@@ -44,6 +58,12 @@ plural()
 }
 printLongUsage()
 {
+    local IFS=$'\n'
+    local extension; for extension in "${extensions[@]}"
+    do
+	source "$extension" 2>/dev/null
+    done
+
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
@@ -60,7 +80,8 @@ HELPDESCRIPTION
     --to|-o command	Report by invoking INVOCATIONNOTIFICATION_COMMANDLINE${messageMarker:+
 			while replacing $messageMarker with the message}.
     --to|-o notify	Report via notify-send to the system's notification
-			system.
+			system.${extensionsLongUsages[*]:+
+}${extensionsLongUsages[*]}
     --message|-m MESSAGE
 			Text describing what COMMAND is doing for the user.
     --success SIGIL	Append SIGIL after MESSAGE if COMMAND succeeds.
@@ -268,7 +289,21 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
-	--to|-o)	shift; singleTargetCheck "$0"; target="${1}Target"; if ! type -t "$target" >/dev/null; then printf 'ERROR: No such target: %s\n' "$1"; echo; printUsage "$0"; exit 2; fi >&2; shift;;
+	--to|-o)	shift
+			singleTargetCheck "$0"
+			target="${1}Target"
+			if ! type -t "$target" >/dev/null; then
+			    if extension="${extensionNames["$1"]}" && [ -n "$extension" ]; then
+				source "$extension" || exit $?
+			    else
+				printf 'ERROR: No such target: %s\n' "$1"
+				echo
+				printUsage "$0"
+				exit 2
+			    fi
+			fi >&2
+			shift
+			;;
 	--message|-m)	shift; message="$1"; shift;;
 	--success)	shift; successSigil="$1"; shift;;
 	--fail)		shift; failSigil="$1"; shift;;
@@ -328,7 +363,7 @@ if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
 elif [ -z "$target" ]; then
     echo 'ERROR: No --to target passed.'
     echo
-    printUsage "$1"
+    printUsage "$0"
     exit 2
 elif [ -z "${message+t}" ]; then
     echo 'ERROR: Must pass -m|--message MESSAGE.'
