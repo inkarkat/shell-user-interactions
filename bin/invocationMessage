@@ -100,11 +100,12 @@ HELPDESCRIPTION
 			concludes (after [clearing the] MESSAGE).
     --spinner-stderr	Each line printed to stderr by COMMAND makes a spinner
 			after MESSAGE rotate once (to indicate that COMMAND is
-			still doing its job). The output itself is discarded.
+			still doing its job). The errors themselves are
+			discarded.
     --sweep-stderr	Each line printed to stderr by COMMAND changes a Knight
 			Rider-alike sweeping control after MESSAGE (to indicate
-			that COMMAND is still doing its job). The output itself
-			is discarded.
+			that COMMAND is still doing its job). The errors
+			themselves are discarded.
     --inline-spinner-stderr
 			Lines printed to stdout are appended as with --inline,
 			but lines printed to stderr make a spinner after MESSAGE
