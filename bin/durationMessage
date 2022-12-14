@@ -307,17 +307,15 @@ update()
 
 
     if [ ${#commands[@]} -gt 0 ]; then
-	if [ ! "$isSilentCommand" ]; then
-	    if [ -n "$printedMessages" ]; then
-		if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
-		    PRINTED_MESSAGE=
-		    PRINTED_UPDATE_MESSAGE=
-		    printedMessages=
-		    printedMessage=
-		    printedUpdateMessage=
-		else
-		    return 1
-		fi
+	if [ ! "$isSilentCommand" ] && [ -n "$printedMessages" ]; then
+	    if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
+		PRINTED_MESSAGE=
+		PRINTED_UPDATE_MESSAGE=
+		printedMessages=
+		printedMessage=
+		printedUpdateMessage=
+	    else
+		return 1
 	    fi
 	fi
 
