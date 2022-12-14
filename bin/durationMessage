@@ -124,7 +124,7 @@ do
 	--message|-m)	shift; message="${1//[$'\n\t']/ }"; shift;;
 	--update-message|-M)
 			shift; updateMessage="${1//[$'\n\t']/ }"; shift;;
-	--inline-or-none|-i)
+	--inline-or-none)
 			shift
 			if [ -t 1 ]; then
 			    printer=printToTerminal
