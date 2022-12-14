@@ -336,18 +336,18 @@ update()
     [ -n "${updateMessage+t}" ] && GIVEN_UPDATE_MESSAGE="$updateMessage"
     PRINTED_UPDATE_MESSAGE="$(expandSymbols "$GIVEN_UPDATE_MESSAGE")"
 
-    local updateClear updateMessage updateFinialization
+    local updateClear updateMessage updateFinalization
     if [ -n "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
 	updateClear="${printedMessages//?/${ERASE}}"
 	updateMessage="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-	updateFinialization="${printedMessages:+${ERASE_LINE_TO_END}}"
+	updateFinalization="${printedMessages:+${ERASE_LINE_TO_END}}"
     else
 	updateClear="${printedUpdateMessage//?/${ERASE}}"
 	updateMessage="${PRINTED_UPDATE_MESSAGE}"
-	updateFinialization="${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
+	updateFinalization="${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
     fi
-    if [ -n "${updateClear}${updateMessage}${updateFinialization}" ]; then
-	if ! $printer "$updateClear" "$updateMessage" "$updateFinialization"; then
+    if [ -n "${updateClear}${updateMessage}${updateFinalization}" ]; then
+	if ! $printer "$updateClear" "$updateMessage" "$updateFinalization"; then
 	    status=1
 	    PRINTED_MESSAGE="$printedMessage"
 	    PRINTED_UPDATE_MESSAGE="$printedUpdateMessage"
