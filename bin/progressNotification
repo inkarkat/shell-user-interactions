@@ -22,7 +22,7 @@ printShortUsage()
     # skim the long one.
     local IFS='|'
     local extensionNameList="${extensions[*]##*/}"
-    printf 'Usage: %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
+    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--initial-report MESSAGE] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
 }
 printUsage()
 {
@@ -77,6 +77,11 @@ HELPDESCRIPTION
     --initial-delay|-T TIMESPAN[SUFFIX]
 			Wait for TIMESPAN before the first update. By default,
 			the first line of progress is reported immediately.
+    --initial-report MESSAGE
+			Immediately update with MESSAGE before any input is
+			read. Useful if the first update may take a while but
+			you still want to inform the user about what's
+			happening.
     --append-count|-c|--prepend-count|-C WHAT
 			Append / prepend the total count to the update (prefixed
 			by WHAT).
@@ -246,6 +251,7 @@ target=
 timespan=1
 timespanAdjustment=
 initialDelay=0
+initialReport=
 isCountPrepend=
 unset countWhat
 endCountCount=
@@ -297,6 +303,8 @@ do
 	--timespan|-t)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r timespan timespanAdjustment || exit 2; shift;;
 	--initial-delay|-T)
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
+	--initial-report)
+			shift; initialReport="$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -423,6 +431,10 @@ status=0
 hasInvokedTarget=
 let count=0
 isFirstExpiry=t
+
+if [ -n "$initialReport" ]; then
+    "$target" "$initialReport" && hasInvokedTarget=t || status=$?
+fi
 
 while IFS=$'\n' read -r line || [ -n "$line" ]
 do
