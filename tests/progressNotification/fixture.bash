@@ -10,8 +10,8 @@ export ERASE_LINE_TO_END='[0K'
 
 inputWrapper()
 {
-    local input="$1"; shift
-    printf '%s\n' "$input" | "$@"
+    local input="$1"; local newline="${1:+\\n}"; shift
+    printf "%s${newline}" "$input" | "$@"
 }
 runWithInput()
 {
