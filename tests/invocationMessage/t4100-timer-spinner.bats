@@ -35,5 +35,5 @@ load timer
 "("6s ${E}/")?"7s ${E}/8s ${E}-8s ${E}\\10s ${E}\\five
 "("12s ${E}|")?"six
 "("12s ${E}|")?"seven
-14s ${E}|${E}YES (14s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+"("14s ${E}|")?"${E}YES (14s)"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
