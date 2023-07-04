@@ -1,6 +1,10 @@
 #!/bin/bash
 shopt -qs extglob
 
+readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
+[ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
+readonly projectDir="${scriptDir}/.."
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
@@ -141,26 +145,6 @@ fi
 delay="$(timeToSeconds "$1")" || exit $?
 
 
-secondsToDuration()
-{
-    local seconds="${1:?}"; shift
-    local weeks=$((seconds / 604800))
-    seconds=$((seconds - 604800 * weeks))
-    local days=$((seconds / 86400))
-    seconds=$((seconds - 86400 * days))
-    local hours=$((seconds / 3600))
-    seconds=$((seconds - 3600 * hours))
-    local minutes=$((seconds / 60))
-    seconds=$((seconds - (60 * minutes)))
-
-    local renderedWeeks renderedDays renderedHours renderedMinutes renderedSeconds
-    [ $weeks -gt 0 ] && renderedWeeks="${weeks}w "
-    [ $days -gt 0 ] && renderedDays="${days}d "
-    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 ] && printf -v renderedHours %02d: "$hours"
-    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedMinutes %02d: "$minutes"
-    [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds %02d "$seconds" || renderedSeconds="$seconds"
-    printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
-}
 updateDuration()
 {
     local previousDuration="$1"; shift
@@ -202,7 +186,7 @@ do
     case "$render" in
 	dot)	    printf '.';;
 	ephemereal) previousDuration="$duration"
-		    duration="$(secondsToDuration "$((delay - SECONDS))")"
+		    duration="$("${projectDir}/lib/secondsToDurationSimple.sh"  "$((delay - SECONDS))")"
 		    updateDuration "$previousDuration" "$duration"
 		    ;;
 
