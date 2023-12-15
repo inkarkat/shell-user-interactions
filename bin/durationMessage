@@ -105,7 +105,7 @@ badArgumentError()
 }
 
 : ${ERASE=}
-: ${ERASE_LINE_TO_END=[0K}
+: ${ERASE_TO_END=[0J}
 : ${NOW:=$(date +%s)}
 : ${DURATION_MESSAGE_TIMESTAMP:=%d-%b-%Y %T}
 action=
@@ -263,7 +263,7 @@ clear()
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
     if [ ! "$isSilentCommand" ] && [ -n "$printedMessages" ]; then
-	if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
+	if $printer "${printedMessages//?/${ERASE}}${ERASE_TO_END}" '' ''; then
 	    PRINTED_MESSAGE=
 	    PRINTED_UPDATE_MESSAGE=
 
@@ -282,7 +282,7 @@ finish()
 
     local status=0
     local printedMessages="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-    local finishClear="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_LINE_TO_END}}"
+    local finishClear="${printedMessages//?/${ERASE}}${printedMessages:+${ERASE_TO_END}}"
     local finishMessage="$(expandSymbols "$message")"
     if [ -n "${finishClear}${finishMessage}" ]; then
 	if $printer "$finishClear" "$finishMessage" "${message:+$'\n'}"; then
@@ -312,7 +312,7 @@ update()
 
     if [ ${#commands[@]} -gt 0 ]; then
 	if [ ! "$isSilentCommand" ] && [ -n "$printedMessages" ]; then
-	    if $printer "${printedMessages//?/${ERASE}}${ERASE_LINE_TO_END}" '' ''; then
+	    if $printer "${printedMessages//?/${ERASE}}${ERASE_TO_END}" '' ''; then
 		PRINTED_MESSAGE=
 		PRINTED_UPDATE_MESSAGE=
 		printedMessages=
@@ -342,11 +342,11 @@ update()
     if [ -n "$PRINTED_MESSAGE" ] && [ "$PRINTED_MESSAGE" != "$printedMessage" ]; then
 	updateClear="${printedMessages//?/${ERASE}}"
 	updateMessage="${PRINTED_MESSAGE}${PRINTED_UPDATE_MESSAGE}"
-	updateFinalization="${printedMessages:+${ERASE_LINE_TO_END}}"
+	updateFinalization="${printedMessages:+${ERASE_TO_END}}"
     else
 	updateClear="${printedUpdateMessage//?/${ERASE}}"
 	updateMessage="${PRINTED_UPDATE_MESSAGE}"
-	updateFinalization="${printedUpdateMessage:+${ERASE_LINE_TO_END}}"
+	updateFinalization="${printedUpdateMessage:+${ERASE_TO_END}}"
     fi
     if [ -n "${updateClear}${updateMessage}${updateFinalization}" ]; then
 	if ! $printer "$updateClear" "$updateMessage" "$updateFinalization"; then
