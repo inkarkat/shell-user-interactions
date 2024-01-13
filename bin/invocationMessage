@@ -207,7 +207,6 @@ timer=
 isTimer=
 isRenderTimer=
 maxLength=
-isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
 do
@@ -248,21 +247,17 @@ do
 	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
 	--max-length|-l)
 			shift; maxLength="$1"; shift;;
-	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--command|-c)	shift; commands+=(${commands:+;} "$1"); shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
 if [ $# -ne 0 ]; then
-    if [ "$isNeedEval" ]; then
-	# Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
-	# undo the effects of eval.
-	printf -v quotedSimpleCommand '%q ' "$@"
-	commands+=(${commands:+;} "${quotedSimpleCommand% }")
-    else
-	commands=("$@")
-    fi
+    # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+    # undo the effects of eval.
+    printf -v quotedSimpleCommand '%q ' "$@"
+    commands+=(${commands:+;} "${quotedSimpleCommand% }")
 fi
 if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
@@ -305,12 +300,7 @@ printfToTerminal()
 }
 
 if [ "$isPassthroughIfNoTerminal" ] && ! printfToTerminal ''; then
-    if [ "$isNeedEval" ]; then
-	eval "${commands[@]}"
-    else
-	"${commands[@]}"
-    fi
-    exit $?
+    eval "${commands[@]}"; exit $?
 fi
 
 reserveSpace=
@@ -661,11 +651,8 @@ do
     statusLine="$line"
 done < <(
     (
-	if [ "$isNeedEval" ]; then
-	    eval 'eval "${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
-	else
-	    eval '"${commands[@]}"' ${teeStdoutCommand:+|}$teeStdoutCommand
-	fi 4>&1 1>&2 2>&4 4>&-
+	eval 'eval "${commands[@]}"' \
+	    "${teeStdoutCommand:+ | }${teeStdoutCommand}" 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONMESSAGE_SYNC_DELAY:-0.01}}
 	exit $commandStatus

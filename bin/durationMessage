@@ -111,7 +111,6 @@ badArgumentError()
 action=
 printer=printMessage
 id=
-isNeedEval=
 unset message
 unset updateMessage
 typeset -a commands=()
@@ -144,7 +143,7 @@ do
 			shift
 			printer=printToTerminal
 			;;
-	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--command|-c)	shift; commands+=(${commands:+;} "$1"); shift;;
 	--silent-command)
 			shift; isSilentCommand=t;;
 	--)		shift; break;;
@@ -153,14 +152,10 @@ do
     esac
 done
 if [ $# -ne 0 ]; then
-    if [ "$isNeedEval" ]; then
-	# Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
-	# undo the effects of eval.
-	printf -v quotedSimpleCommand '%q ' "$@"
-	commands+=(${commands:+;} "${quotedSimpleCommand% }")
-    else
-	commands=("$@")
-    fi
+    # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+    # undo the effects of eval.
+    printf -v quotedSimpleCommand '%q ' "$@"
+    commands+=(${commands:+;} "${quotedSimpleCommand% }")
 fi
 if [ ! "$action" ]; then
     badArgumentError "No action passed: $ACTIONS"
@@ -323,12 +318,7 @@ update()
 	    fi
 	fi
 
-	if [ "$isNeedEval" ]; then
-	    eval "${commands[@]}"
-	else
-	    "${commands[@]}"
-	fi
-	status=$?
+	eval "${commands[@]}"; status=$?
     fi
 
 

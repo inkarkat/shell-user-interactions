@@ -284,7 +284,6 @@ reader=defaultReader
 timer=
 isTimer=
 isRenderTimer=
-isNeedEval=
 typeset -a commands=()
 while [ $# -ne 0 ]
 do
@@ -340,21 +339,17 @@ do
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isTimer=t;;
 	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
-	--command|-c)	shift; commands+=(${commands:+;} "$1"); isNeedEval=t; shift;;
+	--command|-c)	shift; commands+=(${commands:+;} "$1"); shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
 if [ $# -ne 0 ]; then
-    if [ "$isNeedEval" ]; then
-	# Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
-	# undo the effects of eval.
-	printf -v quotedSimpleCommand '%q ' "$@"
-	commands+=(${commands:+;} "${quotedSimpleCommand% }")
-    else
-	commands=("$@")
-    fi
+    # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
+    # undo the effects of eval.
+    printf -v quotedSimpleCommand '%q ' "$@"
+    commands+=(${commands:+;} "${quotedSimpleCommand% }")
 fi
 if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
     echo 'ERROR: Must pass -o|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
@@ -403,7 +398,7 @@ elif [ "$target" = 'notifyTarget' ]; then
 	printf 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
 	exit 2
     fi
-    printf -v quotedCommandName %q "$(commandName --no-interpreter ${isNeedEval:+--eval} "${commands[@]}")"
+    printf -v quotedCommandName %q "$(commandName --no-interpreter --eval "${commands[@]}")"
     : ${INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE:="\"$INVOCATIONNOTIFICATION_NOTIFY_SEND\"${INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS:+ $INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS} $quotedCommandName -- $messageMarker"}
 
     # Reuse the commandTarget for this specialization.
@@ -702,11 +697,8 @@ do
     statusLine="$line"
 done < <(
     (
-	if [ "$isNeedEval" ]; then
-	    eval 'eval "${commands[@]}"' "${teeStdoutCommand:+|}$teeStdoutCommand"
-	else
-	    eval '"${commands[@]}"' "${teeStdoutCommand:+|}$teeStdoutCommand"
-	fi 4>&1 1>&2 2>&4 4>&-
+	eval 'eval "${commands[@]}"' \
+	    "${teeStdoutCommand:+ | }${teeStdoutCommand}" 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONNOTIFICATION_SYNC_DELAY:-0.01}}
 	exit $commandStatus
