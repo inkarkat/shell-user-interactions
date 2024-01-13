@@ -2,6 +2,7 @@
 set -o pipefail
 shopt -qs extglob nullglob
 
+: ${INVOCATIONNOTIFICATION_COMMAND_JOINER=;}
 : ${INVOCATIONNOTIFICATION_MESSAGE_MARKER='{}'}
 messageMarker="$INVOCATIONNOTIFICATION_MESSAGE_MARKER"; unset INVOCATIONNOTIFICATION_MESSAGE_MARKER
 : ${INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=0.3}
@@ -284,7 +285,7 @@ reader=defaultReader
 timer=
 isTimer=
 isRenderTimer=
-typeset -a commands=()
+commands=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -339,7 +340,7 @@ do
 			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
 	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isTimer=t;;
 	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
-	--command|-c)	shift; commands+=(${commands:+;} "$1"); shift;;
+	--command|-c)	shift; commands+="${commands:+ $INVOCATIONNOTIFICATION_COMMAND_JOINER }$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -349,9 +350,9 @@ if [ $# -ne 0 ]; then
     # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
     # undo the effects of eval.
     printf -v quotedSimpleCommand '%q ' "$@"
-    commands+=(${commands:+;} "${quotedSimpleCommand% }")
+    commands+="${commands:+ $INVOCATIONNOTIFICATION_COMMAND_JOINER }${quotedSimpleCommand% }"
 fi
-if [ -z "$target" -a -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
+if [ -z "$target" -a -z "${message+t}" -a -z "$commands" ]; then
     echo 'ERROR: Must pass -o|--to overlay|title|command|notify and -m|--message MESSAGE and COMMAND(s).'
     echo
     printUsage "$0"
@@ -378,7 +379,7 @@ elif [ "$isRenderTimer" ] && [ ${#render[@]} -eq 0 ]; then
     echo
     printUsage "$0"
     exit 2
-elif [ ${#commands[@]} -eq 0 ]; then
+elif [ -z "$commands" ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
 fi >&2
@@ -398,7 +399,7 @@ elif [ "$target" = 'notifyTarget' ]; then
 	printf 'ERROR: notify-send command (%s) not found.\n' "$INVOCATIONNOTIFICATION_NOTIFY_SEND"
 	exit 2
     fi
-    printf -v quotedCommandName %q "$(commandName --no-interpreter --eval "${commands[@]}")"
+    printf -v quotedCommandName %q "$(commandName --no-interpreter --eval "$commands")"
     : ${INVOCATIONNOTIFICATION_NOTIFY_COMMANDLINE:="\"$INVOCATIONNOTIFICATION_NOTIFY_SEND\"${INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS:+ $INVOCATIONNOTIFICATION_NOTIFY_ARGUMENTS} $quotedCommandName -- $messageMarker"}
 
     # Reuse the commandTarget for this specialization.
@@ -697,7 +698,7 @@ do
     statusLine="$line"
 done < <(
     (
-	eval 'eval "${commands[@]}"' \
+        eval 'eval "$commands"' \
 	    "${teeStdoutCommand:+ | }${teeStdoutCommand}" 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONNOTIFICATION_SYNC_DELAY:-0.01}}

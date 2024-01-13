@@ -1,5 +1,7 @@
 #!/bin/bash
 
+: ${INVOCATIONSPECIALIZATION_COMMAND_JOINER=;}
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
@@ -74,7 +76,7 @@ HELPTEXT
 hasClear=
 isNoClear=
 hasMessage=
-typeset -a commands=()
+commands=
 typeset -a args=()
 while [ $# -ne 0 ]
 do
@@ -83,7 +85,7 @@ do
 	--no-clear)	shift; isNoClear=t;;
 	--clear|-C)	args+=("$1" "$2"); shift; shift; hasClear=t;;
 	--message|-m)	args+=("$1" "$2"); shift; shift; hasMessage=t;;
-	--command|-c)	args+=("$1" "$2"); shift; commands+=(${commands:+;} "$1"); shift;;
+	--command|-c)	args+=("$1" "$2"); shift; commands+="${commands:+ $INVOCATIONSPECIALIZATION_COMMAND_JOINER }$1"; shift;;
 	--or-passthrough)
 			args+=("$1"); shift;;
 	--success|--fail|--initial-delay|-T)
@@ -96,7 +98,7 @@ done
 
 typeset -a addedArgs=()
 if [ ! "$hasMessage" ]; then
-    commandName="$(commandName --no-interpreter --undefined "${commands[*]}$*" ${commands:+--eval} "${commands[@]}" "$@")"
+    commandName="$(commandName --no-interpreter --undefined "${commands}$*" ${commands:+--eval} "$commands" "$@")"
     addedArgs+=(--message "${commandName}${commandName:+ }")
     [ ! "$isNoClear" ] && [ ! "$hasClear" ] && addedArgs+=(--clear all)
 fi

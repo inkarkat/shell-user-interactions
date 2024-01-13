@@ -2,6 +2,7 @@
 set -o pipefail
 shopt -qs extglob
 
+: ${INVOCATIONMESSAGE_COMMAND_JOINER=;}
 : ${INVOCATIONMESSAGE_SUCCESS_DISPLAY_DELAY=0.3}
 : ${INVOCATIONMESSAGE_FAIL_DISPLAY_DELAY=1}
 : ${INVOCATIONMESSAGE_TIMER_INLINE_PREFIX=(}
@@ -207,7 +208,7 @@ timer=
 isTimer=
 isRenderTimer=
 maxLength=
-typeset -a commands=()
+commands=
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -247,7 +248,7 @@ do
 	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
 	--max-length|-l)
 			shift; maxLength="$1"; shift;;
-	--command|-c)	shift; commands+=(${commands:+;} "$1"); shift;;
+	--command|-c)	shift; commands+="${commands:+ $INVOCATIONMESSAGE_COMMAND_JOINER }$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -257,9 +258,9 @@ if [ $# -ne 0 ]; then
     # Combine --command and SIMPLECOMMAND; need to quote SIMPLECOMMAND to
     # undo the effects of eval.
     printf -v quotedSimpleCommand '%q ' "$@"
-    commands+=(${commands:+;} "${quotedSimpleCommand% }")
+    commands+="${commands:+ $INVOCATIONMESSAGE_COMMAND_JOINER }${quotedSimpleCommand% }"
 fi
-if [ -z "${message+t}" -a ${#commands[@]} -eq 0 ]; then
+if [ -z "${message+t}" -a -z "$commands" ]; then
     echo 'ERROR: Must pass -m|--message MESSAGE and COMMAND(s).'
     echo
     printUsage "$0"
@@ -281,7 +282,7 @@ elif [ "$isRenderTimer" ] && [ ${#render[@]} -eq 0 ]; then
     echo
     printUsage "$0"
     exit 2
-elif [ ${#commands[@]} -eq 0 ]; then
+elif [ -z "$commands" ]; then
     echo 'ERROR: No COMMAND(s) specified; need to pass -c|--command "COMMANDLINE", or SIMPLECOMMAND.'
     exit 2
 fi >&2
@@ -300,7 +301,7 @@ printfToTerminal()
 }
 
 if [ "$isPassthroughIfNoTerminal" ] && ! printfToTerminal ''; then
-    eval "${commands[@]}"; exit $?
+    eval "$commands"; exit $?
 fi
 
 reserveSpace=
@@ -651,7 +652,7 @@ do
     statusLine="$line"
 done < <(
     (
-	eval 'eval "${commands[@]}"' \
+        eval 'eval "$commands"' \
 	    "${teeStdoutCommand:+ | }${teeStdoutCommand}" 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONMESSAGE_SYNC_DELAY:-0.01}}
