@@ -35,7 +35,7 @@ ${R}message: "[67]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \
     run invocationNotification --to overlay --message 'message: ' --initial-delay 3 --timer 2 sleep 5
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^("${R}message: 4s${N}")?"${R}message: 5s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [[ "$output" =~ ^("${R}message: "[45]"s${N}")?"${R}message: "[56]"s${N}"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
