@@ -21,7 +21,7 @@ load ../invocationMessage/timer
     run invocationSweeper sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "${S}sleep [*   ][-*  ][ -* ][  -*][   *]${RE}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [ "$output" = "${S}sleep 5 [*   ][-*  ][ -* ][  -*][   *]${RE}" ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
 
 @test "sweeper without message every second synthesizes the message from the commandline, no-clear option overrides the default clearing " {
@@ -35,5 +35,5 @@ load ../invocationMessage/timer
     run invocationSweeper --clear failure sleep 5
 
     [ $status -eq 0 ]
-    [ "$output" = "${S}sleep [*   ][-*  ][ -* ][  -*][   *]      " ] || echo "$output" | trcontrols | failThis prefix \# >&3
+    [ "$output" = "${S}sleep 5 [*   ][-*  ][ -* ][  -*][   *]      " ] || echo "$output" | trcontrols | failThis prefix \# >&3
 }
