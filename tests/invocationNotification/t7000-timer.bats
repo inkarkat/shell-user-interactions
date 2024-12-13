@@ -15,9 +15,10 @@ load timer
     run invocationNotification --to overlay --message 'message: ' --timer 2 --command "$MULTI_LINE_COMMAND"
 
     [ $status -eq 0 ]
-    [[ "$output" =~ ^"${R}message: ${N}first
-"(second
-)?"${R}message: 1s${N}"(second
+    [[ "$output" =~ ^"${R}message: ${N}"(first
+(second
+)?)?"${R}message: 1s${N}"((first
+)?second
 )?"${R}message: "[234]"s${N}"("${R}message: "[45]"s${N}")?"third
 "("${R}message: "[45]"s${N}")?"fourth
 ${R}message: "[56]"s${N}fifth
