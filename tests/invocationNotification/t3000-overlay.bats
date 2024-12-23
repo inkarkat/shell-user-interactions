@@ -1,28 +1,23 @@
 #!/usr/bin/env bats
 
-load fixture
 load overlay
 
 @test "echo prints the message" {
-    run invocationNotification --to overlay --message 'message: ' echo executed
-
-    [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}executed" ]
+    run -0 invocationNotification --to overlay --message 'message: ' echo executed
+    assert_output "${R}message: ${N}executed"
 }
 
 @test "printf with clear prints and then erases the message" {
-    run invocationNotification --to overlay --message 'message: ' --clear all printf executed
-
-    [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}executed${C}" ]
+    run -0 invocationNotification --to overlay --message 'message: ' --clear all printf executed
+    assert_output "${R}message: ${N}executed${C}"
 }
 
 @test "echo with clear prints and then erases the message" {
-    run invocationNotification --to overlay --message 'message: ' --clear all echo executed
-
-    [ $status -eq 0 ]
-    [ "$output" = "${R}message: ${N}executed
-${C}" ]
+    run -0 invocationNotification --to overlay --message 'message: ' --clear all echo executed
+    assert_output - <<EOF
+${R}message: ${N}executed
+${C}
+EOF
 }
 
 @test "echo with clear does not delay" {

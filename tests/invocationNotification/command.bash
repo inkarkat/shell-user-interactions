@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 readonly RUNS="${BATS_TMPDIR}/runs"
 commandSetup() {
     rm -f "$RUNS"
@@ -14,10 +16,6 @@ printf -v COMMANDLINE_FAIL_LATER '(echo X >> %q; [ $(cat %q | wc -l) -lt ${COMMA
 export COMMANDLINE_FAIL_AFTER
 
 assert_runs() {
-    local runsContents="$(< "$RUNS")"
-    [ "$runsContents" = "${1?}" ]
-}
-
-dump_runs() {
-    prefix '#' "$RUNS" >&3
+    local output="$(< "$RUNS")"
+    assert_output "$@"
 }

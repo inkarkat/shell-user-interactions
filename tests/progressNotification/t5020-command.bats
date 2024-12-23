@@ -1,53 +1,52 @@
 #!/usr/bin/env bats
 
-load fixture
 load command
 
 @test "executes command on a single update" {
-    runWithInput executed progressNotification --to command
-
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
-    assert_runs "[executed]
-[]"
+    run -0 progressNotification --to command <<<'executed'
+    assert_output ''
+    assert_runs <<'EOF'
+[executed]
+[]
+EOF
 }
 
 @test "executes command on the first of three updates because of the default timespan" {
-    runWithInput $'first\nsecond\nthird' progressNotification --to command
-
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
-    assert_runs "[first]
-[]"
+    run -0 progressNotification --to command <<<$'first\nsecond\nthird'
+    assert_output ''
+    assert_runs <<'EOF'
+[first]
+[]
+EOF
 }
 
 @test "executes command on all three updates with zero timespan" {
-    runWithInput $'first\nsecond\nthird' progressNotification --to command --timespan 0
-
-    [ $status -eq 0 ]
-    assert_runs "[first]
+    run -0 progressNotification --to command --timespan 0 <<<$'first\nsecond\nthird'
+    assert_runs <<'EOF'
+[first]
 [second]
 [third]
-[]"
+[]
+EOF
 }
 
 @test "executes special clear command" {
     printf -v PROGRESSNOTIFICATION_CLEAR_COMMANDLINE 'printf \\{%%s\\}\\\\n {} >> %q' "$RUNS"
     export PROGRESSNOTIFICATION_CLEAR_COMMANDLINE
-    runWithInput $'first\nsecond\nthird' progressNotification --to command --timespan 0
-
-    [ $status -eq 0 ]
-    assert_runs "[first]
+    run -0 progressNotification --to command --timespan 0 <<<$'first\nsecond\nthird'
+    assert_runs <<'EOF'
+[first]
 [second]
 [third]
-{}"
+{}
+EOF
 }
 @test "executes no clear command" {
     export PROGRESSNOTIFICATION_CLEAR_COMMANDLINE=''
-    runWithInput $'first\nsecond\nthird' progressNotification --to command --timespan 0
-
-    [ $status -eq 0 ]
-    assert_runs "[first]
+    run -0 progressNotification --to command --timespan 0 <<<$'first\nsecond\nthird'
+    assert_runs <<'EOF'
+[first]
 [second]
-[third]"
+[third]
+EOF
 }

@@ -8,11 +8,11 @@ printf -v INVOCATIONNOTIFICATION_POST_COMMANDLINE 'echo POST >> %q' "$RUNS"
 export INVOCATIONNOTIFICATION_POST_COMMANDLINE
 
 @test "pre and post commands are executed around reporting" {
-    run invocationNotification --to command --message 'message: ' echo executed
-
-    [ $status -eq 0 ]
-    [ "$output" = "executed" ]
-    assert_runs "PRE
+    run -0 invocationNotification --to command --message 'message: ' echo executed
+    assert_output 'executed'
+    assert_runs - <<'EOF'
+PRE
 [message: ]
-POST"
+POST
+EOF
 }

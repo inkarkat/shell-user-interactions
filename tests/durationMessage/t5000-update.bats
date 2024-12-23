@@ -3,23 +3,20 @@
 load fixture
 
 @test "updating an unknown ID causes an error and returns 4" {
-    run durationMessage --id doesNotExist --update
-    [ $status -eq 4 ]
-    [ "$output" = 'ERROR: ID "doesNotExist" not found.' ]
+    run -4 durationMessage --id doesNotExist --update
+    assert_output 'ERROR: ID "doesNotExist" not found.'
 }
 
 @test "updating a known ID without a previous message succeeds" {
     durationMessage --id ID --initial
 
-    run durationMessage --id ID --update
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
+    run -0 durationMessage --id ID --update
+    assert_output ''
 }
 
 @test "updating a known ID without a previous message with a message" {
     durationMessage --id ID --initial
 
-    run durationMessage --id ID --update --message 'first update'
-    [ $status -eq 0 ]
-    [ "$output" = 'first update' ]
+    run -0 durationMessage --id ID --update --message 'first update'
+    assert_output 'first update'
 }

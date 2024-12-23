@@ -4,23 +4,19 @@ load ../invocationMessage/fixture
 load ../invocationMessage/timer
 
 @test "duration and error output power a spinner" {
-    run invocationSpinner --message 'message: ' --command "$MULTI_LINE_COMMAND"
-
-    [ $status -eq 0 ]
+    run -0 invocationSpinner --message 'message: ' --command "$MULTI_LINE_COMMAND"
     [ "$output" = "message: /-\|/-\|/ first
 second
 third
 fourth
-fifth" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+fifth" ] || dump_output
 }
 
 @test "duration and error output power a spinner and then prints the sigil" {
-    run invocationSpinner --message 'message: ' --success OK --command "$MULTI_LINE_COMMAND"
-
-    [ $status -eq 0 ]
+    run -0 invocationSpinner --message 'message: ' --success OK --command "$MULTI_LINE_COMMAND"
     [[ "$output" =~ ^"message: /-\|/-\|/${E}OK ("[67]s")first
 second
 third
 fourth
-fifth"$ ]] || echo "$output" | trcontrols | failThis prefix \# >&3
+fifth"$ ]] || dump_output
 }

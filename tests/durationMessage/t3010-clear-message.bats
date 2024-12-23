@@ -7,40 +7,34 @@ MESSAGE='testing it'
 @test "clearing a known ID clears a previous message" {
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
 
-    run durationMessage --id ID --inline-always --clear
-    [ $status -eq 0 ]
-    [ "$output" = "${MESSAGE//?/}${CLR}" ]
+    run -0 durationMessage --id ID --inline-always --clear
+    assert_output "${MESSAGE//?/}${CLR}"
 }
 
 @test "clearing a known ID without inline outputs nothing" {
     durationMessage --id ID --initial --message "$MESSAGE"
 
-    run durationMessage --id ID --clear
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
+    run -0 durationMessage --id ID --clear
+    assert_output ''
 }
 
 @test "clearing again does not output anything" {
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
     durationMessage --id ID --clear
 
-    run durationMessage --id ID --inline-always --clear
-    [ $status -eq 0 ]
-    [ "$output" = '' ]
+    run -0 durationMessage --id ID --inline-always --clear
+    assert_output ''
 }
 
 @test "clearing with unavailable sink returns 1, next clearing will output" {
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
-    DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --inline-always --clear
-    [ $status -eq 1 ]
+    DURATION_MESSAGE_SINK=/dev/full run -1 durationMessage --id ID --inline-always --clear
 
-    run durationMessage --id ID --inline-always --clear
-    [ $status -eq 0 ]
-    [ "$output" = "${MESSAGE//?/}${CLR}" ]
+    run -0 durationMessage --id ID --inline-always --clear
+    assert_output "${MESSAGE//?/}${CLR}"
 }
 
 @test "clearing with unavailable sink without inline succeeds because nothing is output" {
     durationMessage --id ID --initial --message "$MESSAGE"
-    DURATION_MESSAGE_SINK=/dev/full run durationMessage --id ID --clear
-    [ $status -eq 0 ]
+    DURATION_MESSAGE_SINK=/dev/full run -0 durationMessage --id ID --clear
 }

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 case "$TERM" in
     screen*)
 	readonly R=']2;['

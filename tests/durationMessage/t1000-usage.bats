@@ -1,37 +1,34 @@
 #!/usr/bin/env bats
 
+load fixture
+
 export ACTIONS='--initial|--clear|--finish|--update'
 
 @test "no arguments prints message and usage instructions" {
-    run durationMessage
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = "ERROR: No action passed: $ACTIONS" ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+    run -2 durationMessage
+    assert_line -n 0 "ERROR: No action passed: $ACTIONS"
+    assert_line -n 2 -e '^Usage:'
 }
 
 @test "invalid option prints message and usage instructions" {
-  run durationMessage --invalid-option
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = 'ERROR: Unknown option "--invalid-option"!' ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+  run -2 durationMessage --invalid-option
+    assert_line -n 0 'ERROR: Unknown option "--invalid-option"!'
+    assert_line -n 2 -e '^Usage:'
 }
 
 @test "-h prints long usage help" {
-  run durationMessage -h
-    [ $status -eq 0 ]
-    [ "${lines[0]%% *}" != 'Usage:' ]
+  run -0 durationMessage -h
+    refute_line -n 0 -e '^Usage:'
 }
 
 @test "no action prints message and usage instructions" {
-    run durationMessage --message some-message
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = "ERROR: No action passed: $ACTIONS" ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+    run -2 durationMessage --message some-message
+    assert_line -n 0 "ERROR: No action passed: $ACTIONS"
+    assert_line -n 2 -e '^Usage:'
 }
 
 @test "no ID prints message and usage instructions" {
-    run durationMessage --initial
-    [ $status -eq 2 ]
-    [ "${lines[0]}" = "ERROR: No ID passed." ]
-    [ "${lines[2]%% *}" = 'Usage:' ]
+    run -2 durationMessage --initial
+    assert_line -n 0 "ERROR: No ID passed."
+    assert_line -n 2 -e '^Usage:'
 }

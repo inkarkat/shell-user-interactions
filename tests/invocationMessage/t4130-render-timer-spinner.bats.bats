@@ -4,12 +4,10 @@ load fixture
 load timer
 
 @test "duration and output power a spinner" {
-    run invocationMessage --message 'message: ' --spinner --timespan 0 --render-timer 1 --command "$MULTI_LINE_COMMAND"
-
-    [ $status -eq 0 ]
+    run -0 invocationMessage --message 'message: ' --spinner --timespan 0 --render-timer 1 --command "$MULTI_LINE_COMMAND"
     [ "$output" = "message: /-\|/-\|/ first
 second
 third
 fourth
-fifth" ] || echo "$output" | trcontrols | failThis prefix \# >&3
+fifth" ] || dump_output
 }

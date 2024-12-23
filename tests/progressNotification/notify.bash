@@ -5,6 +5,9 @@ if [ $# -gt 1 ]; then
     printf %s\\n "$*" >> "$RUNS"
     exit 0
 fi
+
+load fixture
+
 export PROGRESSNOTIFICATION_NOTIFY_COMMANDLINE="\"${BASH_SOURCE[0]}\" \"progressNotification\" -- {}"
 export RUNS="${BATS_TMPDIR}/runs"
 
@@ -16,10 +19,6 @@ setup() {
 }
 
 assert_runs() {
-    local runsContents="$(< "$RUNS")"
-    [ "$runsContents" = "${1?}" ]
-}
-
-dump_runs() {
-    prefix '#' "$RUNS" >&3
+    local output="$(< "$RUNS")"
+    assert_output "$@"
 }

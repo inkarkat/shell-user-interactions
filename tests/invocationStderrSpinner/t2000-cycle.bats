@@ -3,20 +3,20 @@
 load ../invocationMessage/fixture
 
 @test "invocationSpinner spins on both stdout and stderr and prints both" {
-    run invocationSpinner --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
-    [ "$output" = "message: /-stdout
-\\stdout again
+    run -0 invocationSpinner --message 'message: ' --command "$BOTH_COMMAND"
+    assert_output - <<'EOF'
+message: /-stdout
+\stdout again
 | stderr
-stderr again" ]
+stderr again
+EOF
 }
 
 @test "invocationStderrSpinner spins only on stderr and prints only stdout" {
-    run invocationStderrSpinner --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
-    [ "$output" = "message: /-stdout
+    run -0 invocationStderrSpinner --message 'message: ' --command "$BOTH_COMMAND"
+    assert_output - <<'EOF'
+message: /-stdout
 stdout again
- " ]
+ 
+EOF
 }
