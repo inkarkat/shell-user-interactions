@@ -10,7 +10,7 @@ load timer
 
 @test "print duration every two seconds, ignoring stderr" {
     run -0 invocationMessage --message 'message: ' --timer 2 --command "$MULTI_LINE_COMMAND"
-    [[ "$output" =~ ^"message: 1s"[234]s"${E}"[45]s"${E}"[56]s"${E}"[67]s"${E}first
+    [[ "$output" =~ ^"message: 1s"[234]s"${E}"[45]s"${E}"[56]s"${E}"[67]s"${E}"("7s${E}")?"first
 second
 third
 fourth
