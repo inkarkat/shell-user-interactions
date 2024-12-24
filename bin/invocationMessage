@@ -663,7 +663,7 @@ done < <(
 exec 4>&1 1>&2 2>&4 4>&-
 
 extractedStatus="${statusLine##*$STATUSLINE_PREFIX}"
-[[ "$extractedStatus" =~ ^[0-9]+$ ]] && status=$extractedStatus
+[[ "$extractedStatus" =~ ^[0-9]+$ ]] && status=$extractedStatus || status=0
 commandErrorOutput="${commandErrorOutput%${STATUSLINE_PREFIX}+([0-9])}"
 case "$commandErrorOutput" in
     *$'\n'?*)	isSingleCommandError=;;
