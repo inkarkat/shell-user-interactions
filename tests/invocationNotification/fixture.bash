@@ -1,5 +1,9 @@
 #!/bin/bash
 
+bats_require_minimum_version 1.5.0
+bats_load_library bats-support
+bats_load_library bats-assert
+
 export S='sleep 0.01;'
 
 export INVOCATIONNOTIFICATION_SINK=/dev/stdout
@@ -26,5 +30,5 @@ assertNoDelay()
     export INVOCATIONNOTIFICATION_SUCCESS_DISPLAY_DELAY=11
     export INVOCATIONNOTIFICATION_FAIL_DISPLAY_DELAY=11
     run timeout 9 "$@"
-    [ $status -ne 124 ]
+    assert_not_equal $status 124
 }

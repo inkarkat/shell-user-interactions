@@ -3,18 +3,16 @@
 load fixture
 
 @test "with --or-passthrough, echo prints the message when the sink is writable" {
-    run invocationMessage --or-passthrough --message 'message: ' --clear all --command 'echo commandline' echo simplecommand
-
-    [ $status -eq 0 ]
-    [ "$output" = "${S}message: commandline
+    run -0 invocationMessage --or-passthrough --message 'message: ' --clear all --command 'echo commandline' echo simplecommand
+    assert_output - <<EOF
+${S}message: commandline
 simplecommand
-${RE}" ]
+${RE}
+EOF
 }
 
 @test "a failing silent command with passthrough returns its exit status" {
-    NO_OUTPUT="message: "
-    run invocationMessage --or-passthrough --message "$NO_OUTPUT" false
-
-    [ $status -eq 1 ]
-    [ "$output" = "$NO_OUTPUT" ]
+    NO_OUTPUT='message: '
+    run -1 invocationMessage --or-passthrough --message "$NO_OUTPUT" false
+    assert_output "$NO_OUTPUT"
 }

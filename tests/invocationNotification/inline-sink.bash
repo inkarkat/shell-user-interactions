@@ -1,13 +1,17 @@
 #!/usr/bin/env bats
 
+load fixture
+
 export INVOCATIONNOTIFICATION_SINK="${BATS_TMPDIR}/sink"
 
 setup() {
-    > "$INVOCATIONNOTIFICATION_SINK"
+    : > "$INVOCATIONNOTIFICATION_SINK"
 }
 
 assert_sink() {
-    [ "$(cat "$INVOCATIONNOTIFICATION_SINK")" = "${1?}" ]
+    [ "$(cat "$INVOCATIONNOTIFICATION_SINK")" = "${1?}" ] && return 0
+    dump_sink
+    return 1
 }
 
 

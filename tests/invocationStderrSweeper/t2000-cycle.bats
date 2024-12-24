@@ -3,20 +3,20 @@
 load ../invocationMessage/fixture
 
 @test "invocationSweeper spins on both stdout and stderr and prints both" {
-    run invocationSweeper --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
-    [ "$output" = "message: [*   ][-*  ]stdout
+    run -0 invocationSweeper --message 'message: ' --command "$BOTH_COMMAND"
+    assert_output - <<'EOF'
+message: [*   ][-*  ]stdout
 [ -* ]stdout again
 [  -*]      stderr
-stderr again" ]
+stderr again
+EOF
 }
 
 @test "invocationStderrSweeper spins only on stderr and prints only stdout" {
-    run invocationStderrSweeper --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
-    [ "$output" = "message: [*   ][-*  ]stdout
+    run -0 invocationStderrSweeper --message 'message: ' --command "$BOTH_COMMAND"
+    assert_output - <<'EOF'
+message: [*   ][-*  ]stdout
 stdout again
-      " ]
+      
+EOF
 }

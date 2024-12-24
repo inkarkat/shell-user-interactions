@@ -3,9 +3,7 @@
 load ../invocationMessage/fixture
 
 @test "invocationTimedSweeper spins on both stdout and stderr and prints both" {
-    run invocationTimedSweeper --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
+    run -0 invocationTimedSweeper --message 'message: ' --command "$BOTH_COMMAND"
     [ "$output" = "message: [*   ][-*  ]stdout
 [ -* ]stdout again
 [  -*]      stderr
@@ -13,9 +11,7 @@ stderr again" ]
 }
 
 @test "invocationTimedStderrSweeper spins only on stderr and prints only stdout" {
-    run invocationTimedStderrSweeper --message 'message: ' --command "$BOTH_COMMAND"
-
-    [ $status -eq 0 ]
+    run -0 invocationTimedStderrSweeper --message 'message: ' --command "$BOTH_COMMAND"
     [ "$output" = "message: [*   ][-*  ]stdout
 stdout again
       " ]

@@ -1,33 +1,31 @@
 #!/usr/bin/env bats
 
+load fixture
+
 export INVOCATIONMESSAGE_SINK=/dev/null
 
 @test "a simple successful command is executed and returns its output" {
-    run invocationMessage --message 'message: ' echo executed
-
-    [ $status -eq 0 ]
-    [ "$output" = "executed" ]
+    run -0 invocationMessage --message 'message: ' echo executed
+    assert_output 'executed'
 }
 
 @test "a successful commandline is executed and returns its output" {
-    run invocationMessage --message 'message: ' --command 'echo executed'
-
-    [ $status -eq 0 ]
-    [ "$output" = "executed" ]
+    run -0 invocationMessage --message 'message: ' --command 'echo executed'
+    assert_output 'executed'
 }
 
 @test "two commandlines are executed and return their outputs" {
-    run invocationMessage --message 'message: ' --command 'echo first' --command 'echo second'
-
-    [ $status -eq 0 ]
-    [ "$output" = "first
-second" ]
+    run -0 invocationMessage --message 'message: ' --command 'echo first' --command 'echo second'
+    assert_output - <<'EOF'
+first
+second
+EOF
 }
 
 @test "a simple command and a commandline are executed and return their outputs" {
-    run invocationMessage --message 'message: ' --command 'echo commandline' echo simplecommand
-
-    [ $status -eq 0 ]
-    [ "$output" = "commandline
-simplecommand" ]
+    run -0 invocationMessage --message 'message: ' --command 'echo commandline' echo simplecommand
+    assert_output - <<'EOF'
+commandline
+simplecommand
+EOF
 }

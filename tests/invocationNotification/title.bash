@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 export INVOCATIONNOTIFICATION_SINK=/dev/stdout
 
 case "$TERM" in

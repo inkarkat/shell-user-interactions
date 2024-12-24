@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 export INVOCATIONNOTIFICATION_SINK=/dev/stdout
 
 readonly R="${SAVE_CURSOR_POSITION}[1;1H[37;44m["

@@ -1,6 +1,5 @@
 #!/usr/bin/env bats
 
-load fixture
 load command
 
 printf -v PROGRESSNOTIFICATION_PRE_COMMANDLINE 'echo PRE >> %q' "$RUNS"
@@ -9,23 +8,23 @@ printf -v PROGRESSNOTIFICATION_POST_COMMANDLINE 'echo POST >> %q' "$RUNS"
 export PROGRESSNOTIFICATION_POST_COMMANDLINE
 
 @test "pre and post commands are executed around reporting" {
-    runWithInput executed progressNotification --to command
-
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
-    assert_runs "PRE
+    run -0 progressNotification --to command <<<'executed'
+    assert_output ''
+    assert_runs <<'EOF'
+PRE
 [executed]
 []
-POST"
+POST
+EOF
 }
 
 @test "pre and post commands are executed around reporting without clear command" {
     export PROGRESSNOTIFICATION_CLEAR_COMMANDLINE=''
-    runWithInput executed progressNotification --to command
-
-    [ $status -eq 0 ]
-    [ "$output" = "" ]
-    assert_runs "PRE
+    run -0 progressNotification --to command <<<'executed'
+    assert_output ''
+    assert_runs <<'EOF'
+PRE
 [executed]
-POST"
+POST
+EOF
 }

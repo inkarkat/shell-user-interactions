@@ -1,5 +1,7 @@
 #!/bin/bash
 
+load fixture
+
 export INVOCATIONMESSAGE_STDERR_TO_TERM=t
 
 runneeWrapper()
@@ -11,6 +13,12 @@ runneeWrapper()
 }
 runWithFullOutput()
 {
-    run runneeWrapper "$@"
+    typeset -a runArgs=()
+    while [[ "$1" =~ ^- ]]
+    do
+	runArgs+=("$1"); shift
+    done
+
+    run "${runArgs[@]}" runneeWrapper "$@"
     output="${output%\$}"
 }
