@@ -97,7 +97,7 @@ EXIT STATUS:
 
 Example:
 HELPTEXT
-    printf '%s | tee >(%s | %q %s)\n' 'stdbuf -oL cp --verbose /boot/initrd* /tmp' "sed --unbuffered 's/ -> .*$//'" "$(basename "$1")" "--to overlay --count 'kernel image'"
+    printf '%s | tee >(%s | %q %s)\n' 'stdbuf -oL cp --verbose /boot/initrd* /tmp' "sed --unbuffered 's/ -> .*$//'" "$(basename "$1")" "--to overlay --prepend-count 'kernel image'"
 }
 
 timeToSeconds()
