@@ -13,6 +13,7 @@ With the offered reusable commands, these typical interactions can be dealt with
 * [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics) for the `invocationNotification` command
 * automated testing is done with _bats - Bash Automated Testing System_ (https://github.com/bats-core/bats-core)
 * [inkarkat/shell-filters](https://github.com/inkarkat/shell-filters) for automated tests
+* [inkarkat/sed-extensions](https://github.com/inkarkat/sed-extensions) for automated tests
 
 ### Installation
 
