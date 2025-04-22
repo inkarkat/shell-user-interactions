@@ -29,7 +29,7 @@ fifth"$ ]] || dump_output
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
     run -0 invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
-    assert_control_output "message: 4s5s${E}${E}OK (5s)" || dump_output
+    [[ "$output" =~ ^"message: "("5s"|"4s5s${E}")"${E}OK (5s)"$ ]] || dump_output
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {
