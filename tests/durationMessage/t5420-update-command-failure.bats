@@ -9,14 +9,14 @@ COMMAND_OUTPUT='command output'
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
 
     run -42 durationMessage --id ID --update --inline-always --command '(exit 42)'
-    assert_output "${MESSAGE//?/}${CLR}${MESSAGE}"
+    assert_control_output "${MESSAGE//?/}${CLR}${MESSAGE}"
 }
 
 @test "updating with unavailable sink returns 1 and does not invoke the command" {
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
 
     DURATION_MESSAGE_SINK=/dev/full run -1 durationMessage --id ID --update --inline-always "${APPEND_COMMAND_ARGUMENTS[@]}" "$MARKER"
-    assert_output ''
+    assert_control_output ''
     assert_marker_calls -eq 0
 }
 
@@ -27,7 +27,7 @@ COMMAND_OUTPUT='command output'
     DURATION_MESSAGE_SINK=/dev/full run -1 durationMessage --id ID --update --inline-always echo "$COMMAND_OUTPUT"
 
     run -0 durationMessage --id ID --update --inline-always echo "$COMMAND_OUTPUT"
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${MESSAGE//?/}${CLR}${COMMAND_OUTPUT}
 ${MESSAGE}
 EOF

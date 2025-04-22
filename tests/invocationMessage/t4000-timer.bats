@@ -19,7 +19,7 @@ fifth"$ ]] || dump_output
 
 @test "print duration every two seconds is suppressed with initial delay of 3 seconds due to shortness" {
     run -0 invocationMessage --message 'message: ' --initial-delay 3 --timer 2 sleep 2.5
-    assert_output ''
+    assert_control_output ''
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration" {
@@ -29,7 +29,7 @@ fifth"$ ]] || dump_output
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
     run -0 invocationMessage --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
-    assert_output "message: 4s5s${E}${E}OK (5s)" || dump_output
+    assert_control_output "message: 4s5s${E}${E}OK (5s)" || dump_output
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {
@@ -41,5 +41,5 @@ fifth"$ ]] || dump_output
 @test "a failing silent command with --timer returns its exit status" {
     NO_OUTPUT='message: '
     run -1 invocationMessage --message "$NO_OUTPUT" --timer 2 false
-    assert_output "$NO_OUTPUT"
+    assert_control_output "$NO_OUTPUT"
 }

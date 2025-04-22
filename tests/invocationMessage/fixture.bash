@@ -32,3 +32,12 @@ assertNoDelay()
     run timeout 9 "$@"
     assert_not_equal $status 124
 }
+
+assert_control_output()
+{
+    if [ "${1?}" = - ]; then
+	trcontrols | output="$(printf '%s\n' "$output" | trcontrols)" assert_output -
+    else
+	output="$(printf '%s\n' "$output" | trcontrols)" assert_output "$(printf '%s\n' "$1" | trcontrols)"
+    fi
+}

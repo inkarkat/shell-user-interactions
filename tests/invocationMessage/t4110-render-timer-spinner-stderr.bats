@@ -5,7 +5,7 @@ load timer
 
 @test "duration and error output power a spinner" {
     run -0 invocationMessage --message 'message: ' --render-timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
-    assert_output "message: /-\|/-\ "
+    assert_control_output "message: /-\|/-\ "
 }
 
 @test "duration and error output power a spinner and then print sigil" {
@@ -21,5 +21,5 @@ load timer
 @test "a failing silent command with --render-timer returns its exit status" {
     NO_OUTPUT='message: '
     run -1 invocationMessage --message "$NO_OUTPUT" --render-timer 2 --timespan 0 --spinner-stderr false
-    assert_output "$NO_OUTPUT"
+    assert_control_output "$NO_OUTPUT"
 }

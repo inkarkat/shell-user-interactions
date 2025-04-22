@@ -5,7 +5,7 @@ export INVOCATIONNOTIFICATION_EXTENSIONS_DIR="${BATS_TEST_DIRNAME}/extensions"
 
 @test "bar extension works like overlay" {
     run -0 invocationNotification --to bar --message 'message: ' echo executed
-    assert_output "${R}message: ${N}executed"
+    assert_control_output "${R}message: ${N}executed"
 }
 
 @test "foo extension executes a custom command" {

@@ -11,7 +11,7 @@ SYMBOL_OUTPUT='01-Apr-2020 11:06:40 now (0)'
     durationMessage --id ID --initial --inline-always --message "$MESSAGE"
 
     run -0 durationMessage --id ID --update --inline-always echo "$COMMAND_OUTPUT"
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${MESSAGE//?/}${CLR}$COMMAND_OUTPUT
 ${MESSAGE}
 EOF
@@ -22,7 +22,7 @@ EOF
     let NOW+=1
 
     run -0 durationMessage --id ID --update --inline-always echo "$COMMAND_OUTPUT"
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${SYMBOL_OUTPUT//?/}${CLR}$COMMAND_OUTPUT
 01-Apr-2020 11:06:41 now (1)
 EOF
@@ -33,5 +33,5 @@ EOF
     let NOW+=1
 
     run -0 durationMessage --id ID --update --inline-always printf "(${COMMAND_OUTPUT})"
-    assert_output "${SYMBOL_OUTPUT//?/}${CLR}(${COMMAND_OUTPUT})01-Apr-2020 11:06:41 now (1)"
+    assert_control_output "${SYMBOL_OUTPUT//?/}${CLR}(${COMMAND_OUTPUT})01-Apr-2020 11:06:41 now (1)"
 }

@@ -13,5 +13,5 @@ durationMessageWrapper()
 
 @test "clearing after existing text in a line keeps that text" {
     run durationMessageWrapper
-    assert_output "a prefix:testing it${MESSAGE//?/}${CLR}"
+    assert_control_output "a prefix:testing it${MESSAGE//?/}${CLR}"
 }

@@ -13,7 +13,7 @@ UPDATE_MESSAGE='%TIMESTAMP%: testing %COUNT% for %DURATION%'
     run durationMessage --id ID --update --update-message "$UPDATE_MESSAGE" -- echo 'command1 output'
     OUTPUT='01-Apr-2020 11:08:42: testing 1 for 02:02'
     assert_success
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 command1 output
 ${OUTPUT}
 EOF
@@ -21,7 +21,7 @@ EOF
     let NOW+=1
 
     run -0 durationMessage --id ID --update --inline-always --update-message "$UPDATE_MESSAGE" -- echo 'command2 output'
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${OUTPUT//?/}${CLR}command2 output
 01-Apr-2020 11:08:43: testing 2 for 02:03
 EOF
@@ -33,7 +33,7 @@ EOF
 
     OUTPUT=', 01-Apr-2020 11:08:42: testing 1 for 02:02'
     run -0 durationMessage --id ID --update --inline-always --update-message ", $UPDATE_MESSAGE" -- echo "command1 output"
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${MESSAGE//?/}${CLR}command1 output
 ${MESSAGE}${OUTPUT}
 EOF
@@ -41,7 +41,7 @@ EOF
     let NOW+=1
 
     run -0 durationMessage --id ID --update --inline-always --update-message ", $UPDATE_MESSAGE" -- echo 'command2 output'
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${MESSAGE//?/}${OUTPUT//?/}${CLR}command2 output
 ${MESSAGE}, 01-Apr-2020 11:08:43: testing 2 for 02:03
 EOF
@@ -53,7 +53,7 @@ EOF
 
     OUTPUT=', 01-Apr-2020 11:08:42: testing 1 for 02:02'
     run -0 durationMessage --id ID --update --inline-always --message "$MESSAGE" --update-message ", $UPDATE_MESSAGE" -- echo 'command1 output'
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${START_MESSAGE//?/}${CLR}command1 output
 ${MESSAGE}${OUTPUT}
 EOF
@@ -62,7 +62,7 @@ EOF
 
     OUTPUT=', 01-Apr-2020 11:08:43: testing 2 for 02:03'
     run -0 durationMessage --id ID --update --inline-always --update-message ", $UPDATE_MESSAGE" -- echo 'command2 output'
-    assert_output - <<EOF
+    assert_control_output - <<EOF
 ${MESSAGE//?/}${OUTPUT//?/}${CLR}command2 output
 ${MESSAGE}${OUTPUT}
 EOF

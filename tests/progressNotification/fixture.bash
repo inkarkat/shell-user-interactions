@@ -11,3 +11,12 @@ export PROGRESSNOTIFICATION_SINK=/dev/stdout
 export SAVE_CURSOR_POSITION='[s'
 export RESTORE_CURSOR_POSITION='[u'
 export ERASE_LINE_TO_END='[0K'
+
+assert_control_output()
+{
+    if [ "${1?}" = - ]; then
+	trcontrols | output="$(printf '%s\n' "$output" | trcontrols)" assert_output -
+    else
+	output="$(printf '%s\n' "$output" | trcontrols)" assert_output "$(printf '%s\n' "$1" | trcontrols)"
+    fi
+}
