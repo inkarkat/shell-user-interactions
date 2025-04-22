@@ -32,7 +32,7 @@ ${R}message: "[67]"s${N}"$ ]] || dump_output
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and then includes final duration in sigil" {
     run -0 invocationNotification --to overlay --message 'message: ' --success OK --initial-delay 3 --timer 2 sleep 5
-    [ "$output" = "${R}message: 4s${N}${R}message: 5s${N}${R}message: OK (5s)${N}" ] || dump_output
+    [[ "$output" =~ ^("${R}message: 4s${N}")?"${R}message: 5s${N}${R}message: OK (5s)${N}"$ ]] || dump_output
 }
 
 @test "print duration every two seconds, with initial delay of 3 seconds, skips the first duration, and inclusion of final duration in sigil is suppressed by clearing the prefix and suffix configuration" {

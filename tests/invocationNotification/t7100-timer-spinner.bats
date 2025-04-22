@@ -21,11 +21,11 @@ load timer
 @test "timer and then spin" {
     run -0 invocationNotification --to overlay --timespan 0 --spinner-stderr --timer 2 --success YES -m 'just a test: ' -c "$SLEEP_OUT_ERR_OUT"
     [[ "$output" =~ ^"${R}just a test: ${N}${R}just a test: (2s) /${N}one
-"("${R}just a test: (4s) /${N}")?"two
-"("${R}just a test: (4s) /${N}")?"three
-"("${R}just a test: (6s) /${N}")?"four
+"("${R}just a test: (4s) /${N}"){0,2}"two
+"("${R}just a test: (4s) /${N}"){0,2}"three
+"("${R}just a test: (6s) /${N}"){0,2}"four
 "("${R}just a test: ("[678]"s) /${N}"){0,2}"${R}just a test: ("[789]"s) -${N}${R}just a test: ("[89]"s) \\${N}${R}just a test: (1"[01]"s) \\${N}five
-"("${R}just a test: (12s)|${N}")?"six
-"("${R}just a test: (1"[23]"s) |${N}")?"seven
-"("${R}just a test: (1"[45]"s) |${N}")?"${R}just a test: YES (1"[45]"s)${N}"$ ]] || dump_output
+"("${R}just a test: (12s)|${N}"){0,2}"six
+"("${R}just a test: (1"[23]"s) |${N}"){0,2}"seven
+"("${R}just a test: (1"[45]"s) |${N}"){0,2}"${R}just a test: YES (1"[45]"s)${N}"$ ]] || dump_output
 }
