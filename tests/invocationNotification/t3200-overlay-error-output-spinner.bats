@@ -63,6 +63,6 @@ load overlay
 }
 
 @test "multi-line error that contains the statusline marker does not rotate the spinner but clears it temporarily" {
-    run -0 invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    run -0 invocationNotification --to overlay --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo -e \\x01666; echo last; } >&2'
     assert_control_output "${R}message: ${N}${R}message: /${N}${R}message: ${N}${R}message: -${N}${R}message: ${N}"
 }

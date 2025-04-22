@@ -597,7 +597,7 @@ if [ $initialDelay = 0 ]; then
     invokeTarget '' || initialTargetStatus=$?
 fi
 
-STATUSLINE_PREFIX='#-#'
+STATUSLINE_PREFIX=''
 STDIN_START=''
 STDIN_END=''
 

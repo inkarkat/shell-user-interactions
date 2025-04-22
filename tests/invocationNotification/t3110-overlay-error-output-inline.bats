@@ -48,6 +48,6 @@ load overlay
 }
 
 @test "multi-line error that contains the statusline marker is not individually appended" {
-    run -0 invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    run -0 invocationNotification --to overlay --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo -e \\x01666; echo last; } >&2'
     assert_control_output "${R}message: ${N}${R}message: first${N}${R}message: last${N}"
 }

@@ -495,7 +495,7 @@ else
     delayedMessage="${reserveSpace}${clear:+$SAVE_CURSOR_POSITION}$message"
 fi
 
-STATUSLINE_PREFIX='#-#'
+STATUSLINE_PREFIX=''
 STDIN_START=''
 STDIN_END=''
 

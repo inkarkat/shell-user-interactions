@@ -158,7 +158,7 @@ more from command
 }
 
 @test "multi-line error that contains the statusline marker does not rotate the spinner with newline" {
-    runWithFullOutput -0 invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    runWithFullOutput -0 invocationMessage --message 'message: ' --timespan 0 --spinner-stderr --command '{ echo first; echo -e \\x01666; echo last; } >&2'
     assert_control_output "message: /-${SP}
 "
 }

@@ -43,7 +43,7 @@ load inline
 }
 
 @test "multi-line error that contains the statusline marker is not individually appended" {
-    run -0 invocationMessage --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo \#-\#666; echo last; } >&2'
+    run -0 invocationMessage --message 'message: ' --timespan 0 --inline-stderr --command '{ echo first; echo -e \\x01666; echo last; } >&2'
     assert_control_output "message: ${S}first${RE}last"
 }
 
