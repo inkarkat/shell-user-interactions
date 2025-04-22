@@ -21,6 +21,6 @@ assert_control_output()
 
 dump_output()
 {
-    printf '# actual: %s\n' "$output" | decontrol >&3
+    printf 'actual: %s\n' "$output" | decontrol | prefix \# >&3
     return 1
 }
