@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load ../invocationMessage/fixture
-load ../invocationMessage/timer
+load ../timer
 
 @test "sweeper with message every second" {
     run -0 invocationSweeper --message 'message: ' sleep 5

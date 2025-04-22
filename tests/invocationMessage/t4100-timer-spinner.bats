@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load fixture
-load timer
+load ../timer
 
 @test "print duration every two seconds and error output powers a spinner" {
     run -0 invocationMessage --message 'message: ' --timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"

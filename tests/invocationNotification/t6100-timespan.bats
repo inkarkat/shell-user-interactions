@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "multi-line error from the command appends every second one including the last because of timespan" {
     run -0 invocationNotification --to overlay --message 'message: ' --timespan 1000ms --inline-stderr --command 'seq 1 5 >&2'

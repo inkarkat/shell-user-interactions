@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load command
-load delayer
+load ../delayer
 
 export INVOCATIONNOTIFICATION_COMMANDLINE="$COMMANDLINE_FAIL_LATER"
 setup() {

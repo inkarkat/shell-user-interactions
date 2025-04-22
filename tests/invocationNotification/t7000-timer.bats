@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load timer
+load ../timer
 
 @test "print duration every two seconds" {
     run -0 invocationNotification --to overlay --message 'message: ' --timer 2 sleep 5

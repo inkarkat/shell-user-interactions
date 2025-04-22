@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load ../invocationMessage/fixture
-load ../invocationMessage/timer
+load ../timer
 
 @test "duration and error output power a spinner" {
     run -0 invocationSpinner --message 'message: ' --command "$MULTI_LINE_COMMAND"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "timespan of 0 second with increase of 1 second suppresses more and more reports" {
     run -0 progressNotification --to overlay --timespan 0s+1s <<<$'first\nsecond\nthird\nfourth\nfifth\nsixth\nseventh\neighth'

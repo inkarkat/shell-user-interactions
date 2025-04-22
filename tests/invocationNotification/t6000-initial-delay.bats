@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load delayer
+load ../delayer
 
 @test "message is suppressed because an immediate command execution falls within the initial delay" {
     run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 1001ms --command true

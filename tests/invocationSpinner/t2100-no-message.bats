@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load ../invocationMessage/fixture
-load ../invocationMessage/timer
+load ../timer
 
 @test "spinner with message every second" {
     run -0 invocationSpinner --message 'message: ' sleep 5

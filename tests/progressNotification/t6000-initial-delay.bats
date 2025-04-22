@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "single report is suppressed by the initial delay" {
     run -0 progressNotification --to overlay --initial-delay 1001ms <<<'executed'

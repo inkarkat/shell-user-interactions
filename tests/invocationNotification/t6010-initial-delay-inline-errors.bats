@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "single-line error from the command is suppressed because it falls within the initial delay" {
     run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 1001ms --timespan 0 --inline-stderr --command "$SINGLE_LINE_COMMAND"

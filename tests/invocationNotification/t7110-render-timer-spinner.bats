@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load timer
+load ../timer
 
 @test "duration and error output power a spinner" {
     run -0 invocationNotification --to overlay --message 'message: ' --render-timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"

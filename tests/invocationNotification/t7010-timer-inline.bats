@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load timer
+load ../timer
 
 @test "print duration every two seconds and error output inline" {
     run -0 invocationNotification --to overlay --message 'message: ' --timer 2 --timespan 0 --inline-stderr --command "$MULTI_LINE_COMMAND"

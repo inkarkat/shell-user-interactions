@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load inline
-load delayer
+load ../delayer
 
 @test "single-line error from the command is suppressed because it falls within the initial delay that is larger than timespan" {
     run -0 invocationMessage --message 'message: ' --initial-delay 1001ms --timespan 1000ms --inline-stderr --command "$SINGLE_LINE_COMMAND"
