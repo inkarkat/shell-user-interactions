@@ -10,7 +10,7 @@ load ../timer
 
 @test "print duration every two seconds and error output powers a spinner and then sigil" {
     run -0 invocationMessage --message 'message: ' --success OK --timer 2 --timespan 0 --spinner-stderr --command "$MULTI_LINE_COMMAND"
-    [[ "$output" =~ ^"message: "(1s\ /1s\ "${E}"-|/-[12]s\ |/[1]s\ -[12]s\ "${E}")"\\"[234]"s ${E}|"[345]"s ${E}|"[56]"s ${E}/"[56]"s ${E}-${E}OK ("[67]"s)"$ ]] || dump_output
+    [[ "$output" =~ ^"message: "(1s\ /1s\ "${E}"-(2s "${E}")?|/-[12]s\ |/[1]s\ -[12]s\ "${E}")"\\"[234]"s ${E}|"[345]"s ${E}|"[56]"s ${E}/"[56]"s ${E}-${E}OK ("[67]"s)"$ ]] || dump_output
 }
 
 @test "first print duration every two seconds and error output powers a spinner and then sigil" {

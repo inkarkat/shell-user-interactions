@@ -74,17 +74,17 @@ assertSingleRendererMessage() {
 
 @test "invalid timespan prints message" {
     run -2 invocationMessage --message message --timespan 42x --spinner-stderr
-    assert_output 'ERROR: Illegal timespan: 42x'
+    assert_output 'ERROR: Illegal TIMESPAN: 42x'
 }
 
 @test "invalid timer interval prints message" {
     run -2 invocationMessage --message message --timer 42x
-    assert_output 'ERROR: Illegal interval: 42x'
+    assert_output 'ERROR: Illegal INTERVAL: 42x'
 }
 
 @test "millisecond timer interval prints message" {
     run -2 invocationMessage --message message --timer 42ms
-    assert_output 'ERROR: Fractional seconds not allowed for interval.'
+    assert_output 'ERROR: Illegal INTERVAL: 42ms'
 }
 
 @test "use of render timer without rendering prints message and usage instructions" {

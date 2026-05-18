@@ -28,7 +28,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|no-error-output|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL[SUFFIX]] [-t|--timespan TIMESPAN[SUFFIX]]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--timer INTERVAL[SUFFIX]] [-l|--max-length COLS] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--or-passthrough] -m|--message MESSAGE [--success SIGIL] [--fail SIGIL] [-C|--clear success|failure|no-error-output|all] [-i|--inline|--spinner|--sweep|--inline-stderr|--spinner-stderr|--sweep-stderr|--inline-spinner-stderr|--inline-sweep-stderr [--render-timer INTERVAL] [-t|--timespan TIMESPAN]] [-T|--initial-delay TIMESPAN] [--timer INTERVAL] [-l|--max-length COLS] -c|--command COMMANDLINE [...]|[--] SIMPLECOMMAND'
 }
 printUsage()
 {
@@ -56,6 +56,8 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     echo
+    local timespanFormat="$(DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t durationToSeconds --get-short-usage format 2>/dev/null)"
+    local intervalFormat="$(durationToSeconds --get-short-usage format 2>/dev/null)"
     cat <<HELPTEXT
     --or-passthrough	When not connected to a terminal, omit MESSAGE,
 			SIGIL(s), and any inlining or rendering. Basically, just
@@ -119,23 +121,20 @@ HELPDESCRIPTION
 			Lines printed to stdout are appended as with --inline,
 			but lines printed to stderr changes a sweeping control
 			after MESSAGE / the last line like --sweep-stderr.
-    --timespan|-t TIMESPAN[SUFFIX]
+    --timespan|-t ${timespanFormat:-TIMESPAN}
 			Only append / spin / sweep a line every TIMESPAN instead
 			of every second. Use --timespan 0 to use every line.
-			SUFFIX may be 'ms' for milliseconds, 's' for seconds
-			(the default), 'm' for minutes, 'h' for hours or 'd' for
-			days.
-    --initial-delay|-T TIMESPAN[SUFFIX]
+    --initial-delay|-T ${timespanFormat:-TIMESPAN}
 			Wait for TIMESPAN before printing the message or
 			appending / spinning / sweeping based on a line, or
 			printing the first total running time. By default, the
 			message is printed immediately. If COMMAND finishes
 			earlier, no message (and SIGIL) get printed at all.
-    --timer INTERVAL[SUFFIX]
+    --timer ${intervalFormat:-INTERVAL}
 			Append the COMMAND's total running time after MESSAGE
 			every INTERVAL. This provides some form of feedback if
 			COMMAND does not (or not often) provide output.
-    --render-timer INTERVAL[SUFFIX]
+    --render-timer ${intervalFormat:-INTERVAL}
 			Rotate the spinner / change the sweeping control every
 			INTERVAL. This provides some form of feedback if COMMAND
 			does not (or not often) provide output.
@@ -157,24 +156,6 @@ HELPTEXT
     printf '%q %s\n' "$(basename "$1")" "-m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
 }
 
-timeToSeconds()
-{
-    case "$1" in
-	+([0-9])ms)	if [ "$3" ]; then
-			    echo >&2 "ERROR: Fractional seconds not allowed for ${2:-timespan}."; exit 2
-			else
-			    time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}"
-			fi
-			;;
-	+([0-9])?(s))   time="${1%s}";;
-	+([0-9])m)	time=$((${1%m} * 60));;
-	+([0-9])h)	time=$((${1%h} * 3600));;
-	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 "ERROR: Illegal ${2:-timespan}: %s\\n" "$1"; exit 2;;
-    esac
-    printf %s "$time"
-}
-
 abortSingleRenderer()
 {
     echo >&2 'ERROR: Only one of --inline[-stderr], --spinner[-stderr], or --sweep[-stderr] can be passed.'
@@ -187,11 +168,11 @@ if [ -z "${INVOCATIONMESSAGE_STDERR_TO_TERM+t}" ]; then
     [ -t 2 ] && INVOCATIONMESSAGE_STDERR_TO_TERM=t
 fi
 
-: ${SAVE_CURSOR_POSITION=[s}
-: ${RESTORE_CURSOR_POSITION=[u}
-: ${ERASE_TO_END=[0J}
-: ${ENABLE_LINE_WRAP=[?7h}
-: ${DISABLE_LINE_WRAP=[?7l}
+: ${SAVE_CURSOR_POSITION='[s'}
+: ${RESTORE_CURSOR_POSITION='[u'}
+: ${ERASE_TO_END='[0J'}
+: ${ENABLE_LINE_WRAP='[?7h'}
+: ${DISABLE_LINE_WRAP='[?7l'}
 isPassthroughIfNoTerminal=
 unset message
 successSigil=
@@ -241,11 +222,11 @@ do
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}");;
 	--inline-sweep-stderr)
 			shift; [ ${#render[@]} -eq 0 ] || abortSingleRenderer "$0"; render=("${sweeps[@]}"); isCaptureStdout=t; isInlineWithRender=t;;
-	--timespan|-t)	shift; timespan="$(timeToSeconds "$1")" || exit $?; shift;;
+	--timespan|-t)	shift; timespan=$(DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t durationToSeconds -- "${1:?}") || { printf >&2 'ERROR: Illegal TIMESPAN: %s\n' "$1"; exit 2; }; shift;;
 	--initial-delay|-T)
-			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
-	--timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isTimer=t;;
-	--render-timer)	shift; reader=timeoutReader; timer="$(timeToSeconds "$1" interval t)" || exit $?; shift; SECONDS=0; isRenderTimer=t;;
+			shift; initialDelay=$(DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t durationToSeconds -- "${1:?}") || { printf >&2 'ERROR: Illegal TIMESPAN: %s\n' "$1"; exit 2; }; shift;;
+	--timer)	shift; reader=timeoutReader; timer="$(durationToSeconds -- "${1:?}")" || { printf >&2 'ERROR: Illegal INTERVAL: %s\n' "$1"; exit 2; }; shift; SECONDS=0; isTimer=t;;
+	--render-timer)	shift; reader=timeoutReader; timer="$(durationToSeconds -- "${1:?}")" || { printf >&2 'ERROR: Illegal INTERVAL: %s\n' "$1"; exit 2; }; shift; SECONDS=0; isRenderTimer=t;;
 	--max-length|-l)
 			shift; maxLength="$1"; shift;;
 	--command|-c)	shift; commands+="${commands:+ $INVOCATIONMESSAGE_COMMAND_JOINER }$1"; shift;;
