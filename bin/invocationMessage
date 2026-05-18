@@ -187,11 +187,11 @@ if [ -z "${INVOCATIONMESSAGE_STDERR_TO_TERM+t}" ]; then
     [ -t 2 ] && INVOCATIONMESSAGE_STDERR_TO_TERM=t
 fi
 
-: ${SAVE_CURSOR_POSITION=[s}
-: ${RESTORE_CURSOR_POSITION=[u}
-: ${ERASE_TO_END=[0J}
-: ${ENABLE_LINE_WRAP=[?7h}
-: ${DISABLE_LINE_WRAP=[?7l}
+: ${SAVE_CURSOR_POSITION='[s'}
+: ${RESTORE_CURSOR_POSITION='[u'}
+: ${ERASE_TO_END='[0J'}
+: ${ENABLE_LINE_WRAP='[?7h'}
+: ${DISABLE_LINE_WRAP='[?7l'}
 isPassthroughIfNoTerminal=
 unset message
 successSigil=
