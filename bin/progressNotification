@@ -4,6 +4,8 @@ shopt -qs extglob nullglob
 : ${PROGRESSNOTIFICATION_REPORT_MARKER='{}'}
 reportMarker="$PROGRESSNOTIFICATION_REPORT_MARKER"; unset PROGRESSNOTIFICATION_REPORT_MARKER
 
+export DURATIONWITHADJUSTMENTTOSECONDS_ACCEPT_FRACTIONAL=t DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t
+
 readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 3)"
 [ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
 readonly projectDir="${scriptDir}/.."
@@ -22,7 +24,7 @@ printShortUsage()
     # skim the long one.
     local IFS='|'
     local extensionNameList="${extensions[*]##*/}"
-    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [-t|--timespan TIMESPAN[SUFFIX][ADJUSTMENT]] [-T|--initial-delay TIMESPAN[SUFFIX]] [--initial-report MESSAGE] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
+    printf 'Usage: cat FILE [...] | %q %s\n' "$(basename "$1")" "-o|--to overlay|title|command|notify${extensionNameList:+|}${extensionNameList} [-t|--timespan $(durationWithAdjustmentToSeconds --get-short-usage format)] [-T|--initial-delay TIMESPAN] [--initial-report MESSAGE] [-c|--append-count|-C|--prepend-count WHAT [--count-to END-COUNT]] [-p|--append-percentage|-P|--prepend-percentage END-COUNT] [-?|-h|--help]"
 }
 printUsage()
 {
@@ -47,6 +49,7 @@ HELPDESCRIPTION
     echo
     printShortUsage "$1"
     echo
+    local timespanFormat="$(durationToSeconds --get-short-usage format 2>/dev/null)"
     cat <<HELPTEXT
     --to|-o overlay	Update in the form of overlaid text, written via ANSI
 			escape sequences in the first line of the terminal.
@@ -62,19 +65,10 @@ HELPDESCRIPTION
     --to|-o notify	Update via notify-send to the system's notification
 			system.${extensionsLongUsages[*]:+
 }${extensionsLongUsages[*]}
-    --timespan|-t TIMESPAN[SUFFIX][ADJUSTMENT]
-			Update every TIMESPAN instead of every second.
-			SUFFIX may be 'ms' for milliseconds, 's' for seconds
-			(the default), 'm' for minutes, 'h' for hours or 'd' for
-			days. ADJUSTMENT can change the original value after
-			every iteration. It starts with either + or -, followed
-			by another TIMESPAN, optionally followed by either
-			SUFFIX or %.
-			For example, 10m+30s starts with 10 minutes and then
-			increases that by 30 seconds on every iteration. 10-5%
-			starts with 10 seconds and then continually decreases
-			that by 5 percent.
-    --initial-delay|-T TIMESPAN[SUFFIX]
+HELPTEXT
+    durationWithAdjustmentToSeconds --get-long-usage '--timespan|-t' 'Update every TIMESPAN instead of every second.'
+    cat <<HELPTEXT
+    --initial-delay|-T ${timespanFormat:-TIMESPAN}
 			Wait for TIMESPAN before the first update. By default,
 			the first line of progress is reported immediately.
     --initial-report MESSAGE
@@ -98,74 +92,6 @@ EXIT STATUS:
 Example:
 HELPTEXT
     printf '%s | tee >(%s | %q %s)\n' 'stdbuf -oL cp --verbose /boot/initrd* /tmp' "sed --unbuffered 's/ -> .*$//'" "$(basename "$1")" "--to overlay --prepend-count 'kernel image'"
-}
-
-timeToSeconds()
-{
-    case "$1" in
-	+([0-9])ms)	if [ -n "$adjustment" ]; then
-			    echo >&2 'ERROR: Cannot combine millisecond interval with adjustment.'
-			    exit 2
-			fi
-			time="00${1%ms}"; time="0${time%???}.${time:$((${#time}-3))}"; time="${time/#+(0)/0}"
-			;;
-	+([0-9])?(s))   time="${1%s}";;
-	+([0-9])m)	time=$((${1%m} * 60));;
-	+([0-9])h)	time=$((${1%h} * 3600));;
-	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 "ERROR: Illegal ${2:-timespan}: %s\\n" "$1"; exit 2;;
-    esac
-    printf %s "$time"
-}
-timeWithAdjustmentToSeconds()
-{
-    local adjustment="${1##+([0-9])?([smhd]|ms)}"
-    local time="${1:0:$((${#1} - ${#adjustment}))}"
-    if [ -z "$time" ]; then
-	printf >&2 'ERROR: Empty timespan: %s\n' "$time"; exit 2;
-    fi
-    case "$adjustment" in
-	'')		    ;;
-	[+-]+([0-9])?(%))   ;;
-	++([0-9])[smhd])    adjustment="+$(timeToSeconds "${adjustment#+}" adjustment)" || return $?;;
-	-+([0-9])[smhd])    adjustment="-$(timeToSeconds "${adjustment#-}" adjustment)" || return $?;;
-	*)		    printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
-    esac
-    time="$(timeToSeconds "$time" "$2")" || exit $?
-    printf '%s\t%s\n' "$time" "$adjustment"
-}
-adjust()
-{
-    local var="${1?}"; shift
-    local adjustment="$1"; shift
-    eval "local value=\$$var"
-    local newValue
-    case "$adjustment" in
-	'')	    return;;
-	[+-]0?(%))  return;;
-	++([0-9]))  newValue="$((value + ${adjustment#+}))";;
-	-+([0-9]))  newValue="$((value - ${adjustment#-}))";;
-	[+-]+([0-9])%)
-		    # As Bash doesn't support floating point math yet, multiply
-		    # with 100, add the percentage change, and divide back and
-		    # round.
-		    # To avoid that the rounding truncates small changes and
-		    # therefore never lets the real value change, store the cent
-		    # value in a global variable, and re-use that instead.
-		    eval "local centValue=\$${var}CentValue"
-		    [ "$centValue" ] || centValue=$((value * 100))
-
-		    local change=$((${adjustment:1:-1} * value))
-		    [ "${adjustment:0:1}" = '+' ] && let centValue+=$change || let centValue-=$change
-		    newValue=$(((centValue + 50) / 100))
-
-		    eval "${var}CentValue=\$centValue"
-		    ;;
-	*)	    printf >&2 'ASSERT: Invalid adjustment: %s\n' "$adjustment"; exit 3;;
-    esac
-
-    [ $newValue -lt 0 ] && newValue=0
-    eval "$var=\$newValue"
 }
 
 singleTargetCheck()
@@ -248,8 +174,8 @@ esac
 : ${PROGRESSNOTIFICATION_TITLE_SUFFIX=']'}
 : ${PROGRESSNOTIFICATION_NOTIFY_SEND:=notify-send}
 target=
+adjustment=
 timespan=1
-timespanAdjustment=
 initialDelay=0
 initialReport=
 isCountPrepend=
@@ -300,9 +226,9 @@ do
 			endCountPercentage="$1"
 			shift
 			;;
-	--timespan|-t)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r timespan timespanAdjustment || exit 2; shift;;
+	--timespan|-t)	shift; < <(durationWithAdjustmentToSeconds --no-adjustment -- "${1:?}") IFS=$'\t' read -r timespan adjustment || exit 2; shift;;
 	--initial-delay|-T)
-			shift; initialDelay="$(timeToSeconds "$1")" || exit $?; shift;;
+			shift; initialDelay=$(durationToSeconds -- "${1:?}") || { printf >&2 'ERROR: Illegal TIMESPAN: %s\n' "$1"; exit 2; }; shift;;
 	--initial-report)
 			shift; initialReport="$1"; shift;;
 	--)		shift; break;;
@@ -355,62 +281,33 @@ fi >&2
 : ${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_PREFIX=' ('}
 : ${PROGRESSNOTIFICATION_APPEND_PERCENTAGE_SUFFIX=')'}
 
-case "${timespan}${initialDelay}${DATE:+.}" in	# Testing: Switch to fractional time when DATE is defined because the testing hook is only available there.
-    0:0)
-	resetTime()
-	{
-	    :
-	}
-	isExpired()
-	{
-	    :
-	}
-	;;
-    *.*)
-	: ${DATE:=date}
+typeset -a ADJUSTER=()
+adjustInto()
+{
+    local -n resultRef="${1:?}"; shift
+    local input="${1:?}"; shift
 
-	resetTime()
-	{
-	    if [ $# -eq 0 ]; then
-		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
-	    else
-		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
-	    fi
-	}
-	case "$timespan" in
-	    *.*)
-		isExpired()
-		{
-		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
-		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
-		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
-		}
-		;;
-	    *)
-		isExpired()
-		{
-		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
-		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
-		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
-		}
-		;;
-	esac
-	;;
-    *)
-	resetTime()
-	{
-	    if [ $# -eq 0 ]; then
-		SECONDS=0
-	    else
-		SECONDS=$((${1:-0} - ${2:-0}))
-	    fi
-	}
-	isExpired()
-	{
-	    [ $SECONDS -ge $timespan ]
-	}
-	;;
-esac
+    [ ${#ADJUSTER[@]} -gt 0 ] \
+	|| coproc ADJUSTER { durationWithAdjustmentToSeconds; } # Start a coproc to adjust individual timespans and manage expiration; this is much more efficient than starting a new process for each timespan.
+
+    printf '%s\n' "$input" >&"${ADJUSTER[1]}"
+    IFS=$'\n' read -r -u "${ADJUSTER[0]}" resultRef \
+	|| { printf >&2 'ASSERT: Adjustment succeeds: %s\n' "$input"; exit 3; }
+    case ",${DEBUG:-}," in *,progressNotification:adjuster,*) printf >&2 '%sprogressNotification (adjuster): %s -> %s\n' "$PS5" "$input" "$resultRef";; esac
+}
+adjustTimespan()
+{
+    [ -n "$adjustment" ] || return
+    adjustInto timespan "${timespan}${adjustment}"
+    [ "$timespan" = 0 ] && adjustment=''    # Optimization: Once the timespan has been reduced to zero, it's not gonna increase again, so we can stop adjusting.
+}
+expiry()
+{
+    local action="${1:?}"; shift
+    local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
+    local result; adjustInto result "${action}${actionArgs}"
+    [ "$action" != 'check' ] || [ "$result" = 'expired' ]
+}
 
 isTerminalOk=t
 printfToTerminal()
@@ -426,7 +323,7 @@ printfToTerminal()
 }
 
 
-resetTime "$timespan" "$initialDelay"
+expiry set "$timespan" "$initialDelay"
 status=0
 hasInvokedTarget=
 let count=0
@@ -440,7 +337,7 @@ while IFS=$'\n' read -r line || [ -n "$line" ]
 do
     let count+=1
 
-    if isExpired; then
+    if expiry check; then
 	report="$line"
 
 	if [ -n "${countWhat+t}" ]; then
@@ -459,8 +356,8 @@ do
 
 	"$target" "$report" && hasInvokedTarget=t || status=$?
 
-	resetTime
-	[ "$isFirstExpiry" ] || adjust timespan "$timespanAdjustment"
+	[ "$isFirstExpiry" ] || adjustTimespan
+	expiry reset "$timespan"
 	isFirstExpiry=
     fi
 done

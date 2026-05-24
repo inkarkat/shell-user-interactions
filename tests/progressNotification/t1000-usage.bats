@@ -27,7 +27,7 @@ load fixture
 
 @test "invalid timespan prints message" {
     run -2 progressNotification --to overlay --timespan 42x
-    assert_output 'ERROR: Illegal adjustment: x'
+    assert_output 'ERROR: Illegal TIMESPAN: 42x'
 }
 
 @test "missing count-to number prints message" {
