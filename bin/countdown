@@ -92,6 +92,16 @@ adjustInterval()
     adjustInto interval "${interval}${intervalAdjustment}"
     [ "$interval" = 0 ] && intervalAdjustment=''    # Optimization: Once the timespan has been reduced to zero, it's not gonna increase again, so we can stop adjusting.
 }
+timeRemaining=
+expiry()
+{
+    local action="${1:?}"; shift
+    local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
+    local result; adjustInto result "${action}${actionArgs}"
+    if [ "$action" = 'check' ]; then
+	[ "$result" = 'expired' ] || { timeRemaining="$result"; return 1; }
+    fi
+}
 
 updateDuration()
 {
@@ -128,13 +138,13 @@ case "$render" in
     *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printUsage "$0" >&2; exit 2;;
 esac
 
-SECONDS=0
-while [ $SECONDS -lt $delay ]
+expiry set "$delay" "$delay"
+while ! expiry check
 do
     case "$render" in
 	dot)	    printf '.';;
 	ephemereal) previousDuration="$duration"
-		    duration="$("${projectDir}/lib/secondsToDurationSimple.sh"  "$((delay - SECONDS))")"
+		    duration="$("${projectDir}/lib/secondsToDurationSimple.sh" ${timeRemaining:?})"
 		    updateDuration "$previousDuration" "$duration"
 		    ;;
 
