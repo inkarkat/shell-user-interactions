@@ -5,7 +5,7 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" 
 [ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
 readonly projectDir="${scriptDir}/.."
 
-export DURATIONWITHADJUSTMENTTOSECONDS_ACCEPT_FRACTIONAL=t
+export DURATIONWITHADJUSTMENTTOSECONDS_ACCEPT_FRACTIONAL=t DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t
 
 printShortUsage()
 {
@@ -88,9 +88,9 @@ adjustInto()
 }
 adjustInterval()
 {
-    [ -n "$intervalAdjustment" ] || return
+    [ -n "$intervalAdjustment" ] || return 1
     adjustInto interval "${interval}${intervalAdjustment}"
-    [ "$interval" = 0 ] && intervalAdjustment=''    # Optimization: Once the timespan has been reduced to zero, it's not gonna increase again, so we can stop adjusting.
+    [ "$interval" != 0 ] || intervalAdjustment=''    # Optimization: Once the timespan has been reduced to zero, it's not gonna increase again, so we can stop adjusting.
 }
 timeRemaining=
 expiry()
@@ -140,7 +140,7 @@ case "$render" in
     *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printUsage "$0" >&2; exit 2;;
 esac
 
-expiry set "$delay" "$delay"
+expiry set "$delay" "$delay" "$interval"
 while ! expiry check
 do
     case "$render" in
@@ -154,10 +154,12 @@ do
 
     if expiry calc $timeRemaining '<' $interval; then
 	# Only wait for the remaining time, not the full interval.
-	interval=$timeRemaining
+	currentInterval=$timeRemaining
+    else
+	currentInterval=$interval
+	adjustInterval && expiry set "$timeRemaining" "$timeRemaining" "$interval"
     fi
-    sleep "$interval" || exit $?
-    adjustInterval
+    sleep "$currentInterval" || exit $?
 done
 [ ${#ADJUSTER[@]} -eq 0 ] || exec {ADJUSTER[1]}>&- {ADJUSTER[0]}<&-; ADJUSTER=()
 

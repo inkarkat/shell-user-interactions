@@ -1,6 +1,6 @@
 #!/bin/bash
 
-seconds="${1:?}"; shift
+seconds=${1%%.*}; milliSeconds=${1#$seconds}; milliSeconds=${milliSeconds:0:4}; shift
 soleSecondFormat="${1:-%ss}"; shift
 
 weeks=$((seconds / 604800))
@@ -16,5 +16,5 @@ seconds=$((seconds - (60 * minutes)))
 [ $days -gt 0 ] && renderedDays="${days}d "
 [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 ] && printf -v renderedHours '%02d:' "$hours"
 [ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedMinutes '%02d:' "$minutes"
-[ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds '%02d' "$seconds" || printf -v renderedSeconds "$soleSecondFormat" "$seconds"
+[ $weeks -gt 0 -o $days -gt 0 -o $hours -gt 0 -o $minutes -gt 0 ] && printf -v renderedSeconds '%02d%s' "$seconds" "$milliSeconds" || printf -v renderedSeconds "$soleSecondFormat" "${seconds}${milliSeconds}"
 printf '%s%s%s%s%s' "$renderedWeeks" "$renderedDays" "$renderedHours" "$renderedMinutes" "$renderedSeconds"
