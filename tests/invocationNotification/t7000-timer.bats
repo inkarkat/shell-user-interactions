@@ -20,8 +20,8 @@ ${R}message: "[56]"s${N}fifth
 ${R}message: "[67]"s${N}"$ ]] || dump_output
 }
 
-@test "print duration every two seconds is suppressed with initial delay of 3 seconds due to shortness" {
-    run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 3 --timer 2 sleep 2.3
+@test "print duration every two seconds is suppressed with initial delay of 3.5 seconds due to shortness" {
+    run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 3500ms --timer 2 sleep 2.3
     assert_output ''
 }
 
