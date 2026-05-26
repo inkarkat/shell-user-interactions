@@ -388,66 +388,31 @@ elif [ "$target" = 'notifyTarget' ]; then
 fi >&2
 
 : ${timespan:=1}
-# If the timer is used, reserve use of SECONDS for that (as we can easily (but a
-# bit more slowly) use external date for the timespan and initial delay), as
-# timing interval likely will fire more often than the (likely infrequent)
-# output.
-case "${timespan}:${initialDelay}${timer:+.}" in
-    0:0?(.))
-	resetTime()
-	{
-	    :
-	}
-	isExpired()
-	{
-	    :
-	}
-	;;
-    *.*)
-	: ${DATE:=date}
+typeset -a ADJUSTER=()
+if [ "$timespan" = 0 -a "$initialDelay" = 0 ]; then
+    expiry() { :; }
+else
+    adjustInto()
+    {
+	local -n resultRef="${1:?}"; shift
+	local input="${1:?}"; shift
 
-	resetTime()
-	{
-	    if [ $# -eq 0 ]; then
-		IFS='.' read startEpoch startNanos <<<"$($DATE +%s.%N)"
-	    else
-		IFS='.' read startEpoch startNanos <<<"$(awk 'BEGIN{ printf "%.3f\n", ARGV[1] - ARGV[2] + ARGV[3]; }' "$($DATE +%s.%N)" "${1:-0}" "${2:-0}")"
-	    fi
-	}
-	case "$timespan" in
-	    *.*)
-		isExpired()
-		{
-		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
-		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
-		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan/./} ]
-		}
-		;;
-	    *)
-		isExpired()
-		{
-		    IFS='.' read endEpoch endNanos <<<"$($DATE +%s.%N)"
-		    local startMillis=10#${startNanos:0:3}; local endMillis=10#${endNanos:0:3}; local diffMillis=$(((endEpoch - startEpoch) * 1000))
-		    [ $((endMillis + diffMillis - startMillis)) -ge ${timespan:?}000 ]
-		}
-		;;
-	esac
-	;;
-    *)
-	resetTime()
-	{
-	    if [ $# -eq 0 ]; then
-		SECONDS=0
-	    else
-		SECONDS=$((${1:-0} - ${2:-0}))
-	    fi
-	}
-	isExpired()
-	{
-	    [ $SECONDS -ge $timespan ]
-	}
-	;;
-esac
+	[ ${#ADJUSTER[@]} -gt 0 ] \
+	    || coproc ADJUSTER { durationWithAdjustmentToSeconds; } # Start a coproc to adjust individual timespans and manage expiration; this is much more efficient than starting a new process for each timespan.
+
+	printf '%s\n' "$input" >&"${ADJUSTER[1]}"
+	IFS=$'\n' read -r -u "${ADJUSTER[0]}" resultRef \
+	|| { printf >&2 'ASSERT: Adjustment succeeds: %s\n' "$input"; exit 3; }
+	case ",${DEBUG:-}," in *,invocationMessage:adjuster,*) printf >&2 '%sinvocationMessage (adjuster): %s -> %s\n' "$PS5" "$input" "$resultRef";; esac
+    }
+    expiry()
+    {
+	local action="${1:?}"; shift
+	local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
+	local result; adjustInto result "${action}${actionArgs}"
+	[ "$action" != 'check' ] || [ "$result" = 'expired' ]
+    }
+fi
 
 line=
 duration=0
@@ -510,14 +475,14 @@ invokeTargetRaw()
 hasInvokedTarget=
 invokeTarget()
 {
-    isExpired || return 1
+    [ "$isExpired" ] || return 1
     invokeTargetRaw "$@" || return $?
     hasInvokedTarget=t
 }
 invokeTargetAndResetTimer()
 {
     invokeTarget "$@" || return $?
-    resetTime
+    expiry reset "$timespan"
     return 0
 }
 invokeTargetAddendum()
@@ -573,7 +538,8 @@ handlePlainDurationUpdate()
 }
 
 initialTargetStatus=
-resetTime "$timespan" "$initialDelay"
+expiry set "$timespan" "$initialDelay"
+isExpired=t
 if [ $initialDelay = 0 ]; then
     invokeTarget '' || initialTargetStatus=$?
 fi
@@ -590,6 +556,8 @@ unset status
 exec 4>&1 1>&2 2>&4 4>&-
 while $reader
 do
+    expiry check && isExpired=t || isExpired=
+
     if [ $((duration - lastDuration)) -ge ${timer:-999} ]; then
 	if [ "$isInline" ]; then
 	    renderDuration
@@ -679,7 +647,7 @@ do
     statusLine="$line"
 done < <(
     (
-        eval 'eval "$commands"' \
+	eval 'eval "$commands"' \
 	    "${teeStdoutCommand:+ | }${teeStdoutCommand}" 4>&1 1>&2 2>&4 4>&-
 	commandStatus=${PIPESTATUS[0]}
 	${teeStdoutCommand:+sleep ${INVOCATIONNOTIFICATION_SYNC_DELAY:-0.01}}

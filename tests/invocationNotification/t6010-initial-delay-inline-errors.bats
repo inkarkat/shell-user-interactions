@@ -14,7 +14,7 @@ load ../delayer
 }
 
 @test "two-line error from the command appends second line because it falls just within the initial delay" {
-    run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 1000ms --timespan 0 --inline-stderr --command 'seq 1 2 >&2'
+    run -0 invocationNotification --to overlay --message 'message: ' --initial-delay 1s --timespan 0 --inline-stderr --command 'seq 1 2 >&2'
     assert_control_output "${R}message: 2${N}"
 }
 

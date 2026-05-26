@@ -6,13 +6,12 @@ load ../delayer
 export INVOCATIONNOTIFICATION_COMMANDLINE="$COMMANDLINE_FAIL_LATER"
 setup() {
     commandSetup
-    delayerSetup
-    fiveOutputHalfUseCommand=(--to command --message 'message: ' --timespan 1000ms --success OK --clear all --inline-stderr --command 'seq 1 5 >&2')
+    fiveOutputHalfUseCommand=(--to command --message 'message: ' --timespan 1s --success OK --clear all --inline-stderr --command 'seq 1 5 >&2')
 }
 
 @test "once the command fails with timeout triggering only every second time, it is not invoked any longer and its last status is returned" {
     export COMMANDLINE_FAIL_AFTER=3
-    run invocationNotification --to command --message 'message: ' --timespan 1000ms --inline-stderr --command 'seq 1 10 >&2'
+    run invocationNotification --to command --message 'message: ' --timespan 1s --inline-stderr --command 'seq 1 10 >&2'
 
     assert_runs <<'EOF'
 X

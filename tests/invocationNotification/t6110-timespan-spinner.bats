@@ -4,7 +4,7 @@ load overlay
 load ../delayer
 
 @test "multi-line error from the command powers a spinner every second one including the last and sigil" {
-    run -0 invocationNotification --to overlay --message 'message: ' --success OK --timespan 1000ms --spinner-stderr --command 'seq 1 5 >&2'
+    run -0 invocationNotification --to overlay --message 'message: ' --success OK --timespan 1s --spinner-stderr --command 'seq 1 5 >&2'
     assert_control_output "${R}message: ${N}${R}message: /${N}${R}message: -${N}${R}message: \\${N}${R}message: OK${N}"
 }
 

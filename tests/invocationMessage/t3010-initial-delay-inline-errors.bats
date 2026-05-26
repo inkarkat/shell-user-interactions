@@ -14,7 +14,7 @@ load ../delayer
 }
 
 @test "two-line error from the command prints second line because it falls just within the initial delay" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 1000ms --timespan 0 --inline-stderr --command 'seq 1 2 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 1s --timespan 0 --inline-stderr --command 'seq 1 2 >&2'
     assert_control_output "message: ${S}2"
 }
 
