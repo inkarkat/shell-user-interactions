@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "append percentage of reports to 100%" {
     run -0 progressNotification --to overlay --timespan 0 --append-percentage 3 <<<$'first\nsecond\nthird'

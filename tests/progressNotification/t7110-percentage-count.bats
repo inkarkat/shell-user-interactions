@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "appended count and percentage when every other report is suppressed includes suppressed reports" {
     run -0 progressNotification --to overlay --timespan 1000ms --append-percentage 10 --append-count element <<<$'first\nsecond\nthird\nfourth\nfifth\nsixth\nseventh\neighth'

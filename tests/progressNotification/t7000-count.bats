@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 load overlay
-load delayer
+load ../delayer
 
 @test "append count of reports" {
     run -0 progressNotification --to overlay --timespan 0 --append-count report <<<$'first\nsecond\nthird'
