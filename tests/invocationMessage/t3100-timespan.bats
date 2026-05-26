@@ -4,7 +4,7 @@ load inline
 load ../delayer
 
 @test "multi-line error from the command prints every second one including the last because of timespan" {
-    run -0 invocationMessage --message 'message: ' --timespan 1000ms --inline-stderr --command 'seq 1 5 >&2'
+    run -0 invocationMessage --message 'message: ' --timespan 1s --inline-stderr --command 'seq 1 5 >&2'
     assert_control_output "message: ${S}1${RE}3${RE}5"
 }
 
@@ -14,7 +14,7 @@ load ../delayer
 }
 
 @test "multi-line error from the command prints every second one including the last and sigil" {
-    run -0 invocationMessage --message 'message: ' --success OK --timespan 1000ms --inline-stderr --command 'seq 1 5 >&2'
+    run -0 invocationMessage --message 'message: ' --success OK --timespan 1s --inline-stderr --command 'seq 1 5 >&2'
     assert_control_output "message: ${S}1${RE}3${RE}5${RE}OK"
 }
 
@@ -24,7 +24,7 @@ load ../delayer
 }
 
 @test "multi-line error from the command prints every second one including the last and then clears" {
-    run -0 invocationMessage --message 'message: ' --clear all --timespan 1000ms --inline-stderr --command 'seq 1 5 >&2'
+    run -0 invocationMessage --message 'message: ' --clear all --timespan 1s --inline-stderr --command 'seq 1 5 >&2'
     assert_control_output "${S}message: 1${RE}message: 3${RE}message: 5${RE}"
 }
 
@@ -34,7 +34,7 @@ load ../delayer
 }
 
 @test "multi-line error from the command prints every second one including the last and sigil and then clears" {
-    run -0 invocationMessage --message 'message: ' --success OK --clear all --timespan 1000ms --inline-stderr --command 'seq 1 5 >&2'
+    run -0 invocationMessage --message 'message: ' --success OK --clear all --timespan 1s --inline-stderr --command 'seq 1 5 >&2'
     assert_control_output "${S}message: 1${RE}message: 3${RE}message: 5${RE}message: OK${RE}"
 }
 

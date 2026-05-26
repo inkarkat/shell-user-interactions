@@ -4,17 +4,17 @@ load inline
 load ../delayer
 
 @test "single-line error from the command is suppressed because it falls within the initial delay that is larger than timespan" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 1001ms --timespan 1000ms --inline-stderr --command "$SINGLE_LINE_COMMAND"
+    run -0 invocationMessage --message 'message: ' --initial-delay 1001ms --timespan 1s --inline-stderr --command "$SINGLE_LINE_COMMAND"
     assert_control_output ''
 }
 
 @test "two-line error from the command prints second line because it falls just within the initial delay that is larger than timespan" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 1000ms --timespan 1000ms --inline-stderr --command 'seq 1 2 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 1s --timespan 1s --inline-stderr --command 'seq 1 2 >&2'
     assert_control_output "message: ${S}2"
 }
 
 @test "multi-line error from the command prints third and then every second line" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 1250ms --timespan 1000ms --inline-stderr --command 'seq 1 9 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 1250ms --timespan 1s --inline-stderr --command 'seq 1 9 >&2'
     assert_control_output "message: ${S}3${RE}5${RE}7${RE}9"
 }
 
@@ -29,16 +29,16 @@ load ../delayer
 }
 
 @test "large initial delay suppresses all output" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 4501ms --timespan 1000ms --inline-stderr --command 'seq 1 9 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 4501ms --timespan 1s --inline-stderr --command 'seq 1 9 >&2'
     assert_control_output ''
 }
 
 @test "large initial delay suppresses all but the final line" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 4500ms --timespan 1000ms --inline-stderr --command 'seq 1 9 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 4500ms --timespan 1s --inline-stderr --command 'seq 1 9 >&2'
     assert_control_output "message: ${S}9"
 }
 
 @test "large initial delay suppresses all but the second-to-final line" {
-    run -0 invocationMessage --message 'message: ' --initial-delay 4000ms --timespan 1000ms --inline-stderr --command 'seq 1 9 >&2'
+    run -0 invocationMessage --message 'message: ' --initial-delay 4000ms --timespan 1s --inline-stderr --command 'seq 1 9 >&2'
     assert_control_output "message: ${S}8"
 }
