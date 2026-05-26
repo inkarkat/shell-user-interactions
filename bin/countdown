@@ -5,11 +5,13 @@ readonly scriptDir="$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" 
 [ -d "$scriptDir" ] || { echo >&2 'ERROR: Cannot determine script directory!'; exit 3; }
 readonly projectDir="${scriptDir}/.."
 
+export DURATIONWITHADJUSTMENTTOSECONDS_ACCEPT_FRACTIONAL=t DURATIONTOSECONDS_ACCEPT_FRACTIONAL=t
+
 printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [-i|--interval TIMESPAN[SUFFIX][ADJUSTMENT]] NUMBER[SUFFIX] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--prefix TEXT] [--as dot|ephemereal] [-c|--clear|-C|--clear-always] [-i|--interval $(durationWithAdjustmentToSeconds --get-short-usage format)] TIMESPAN [-?|-h|--help]"
 }
 printUsage()
 {
@@ -22,101 +24,27 @@ printLongUsage()
 {
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
+    local timespanFormat="$(durationToSeconds --get-short-usage format 2>/dev/null)"
     cat <<HELPDESCRIPTION
 Standin for sleep that prints updates to the terminal as it waits. Pauses for
-NUMBER seconds. SUFFIX may be 's' for seconds (the default), 'm' for minutes,
-'h' for hours or 'd' for days.
+${timespanFormat:-TIMESPAN}
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
     echo
     cat <<HELPTEXT
-    --prefix TEXT   Print TEXT before the remaining wait time.
-    --as dot	    Append a period each interval.
-    --as ephemereal Print (and overwrite) remaining wait times via ANSI escape
-		    sequences.
-    --clear|-c	    Clear TEXT and waiting indication after successful completion.
-    --clear-always|-C
-		    Clear TEXT and waiting indication also when the wait has
-		    been aborted by the user (via Ctrl-C).
-    --interval|-i TIMESPAN[SUFFIX][ADJUSTMENT]
-		    Wait TIMESPAN between updates instead of the one second
-		    default. ADJUSTMENT can change the original value after
-		    every iteration. It starts with either + or -, followed by
-		    another TIMESPAN, optionally followed by either SUFFIX or %.
-		    For example, 10m+30s starts with 10 minutes and then
-		    increases that by 30 seconds on every iteration. 10-5%
-		    starts with 10 seconds and then continually decreases that
-		    by 5 percent.
+    --prefix TEXT	Print TEXT before the remaining wait time.
+    --as dot		Append a period each interval.
+    --as ephemereal	Print (and overwrite) remaining wait times via ANSI
+			escape sequences.
+    --clear|-c		Clear TEXT and waiting indication after successful
+			completion.
+    --clear-always|-C	Clear TEXT and waiting indication also when the wait has
+			been aborted by the user (via Ctrl-C).
 HELPTEXT
+    durationWithAdjustmentToSeconds --get-long-usage '--interval|-i' 'Wait TIMESPAN between updates instead of the one second
+			default.'
 }
-
-timeToSeconds()
-{
-    case "$1" in
-	*([0-9]).+([0-9]))
-	    echo >&2 "ERROR: Floating point interval is not supported here."
-	    exit 2
-	    ;;
-	+([0-9])?(s))   time="${1%s}";;
-	+([0-9])m)	time=$((${1%m} * 60));;
-	+([0-9])h)	time=$((${1%h} * 3600));;
-	+([0-9])d)	time=$((${1%d} * 86400));;
-	*)		printf >&2 'ERROR: Illegal interval: %s\n' "$1"; exit 2;;
-    esac
-    printf %s "$time"
-}
-timeWithAdjustmentToSeconds()
-{
-    local adjustment="${1##+([0-9.])?([smhd])}"
-    local time="${1:0:$((${#1} - ${#adjustment}))}"
-    if [ -z "$time" ]; then
-	printf >&2 'ERROR: Empty interval: %s\n' "$time"; exit 2;
-    fi
-    case "$adjustment" in
-	'')		    ;;
-	[+-]+([0-9])?(%))   ;;
-	++([0-9])[smhd])    adjustment="+$(timeToSeconds "${adjustment#+}" adjustment)" || return $?;;
-	-+([0-9])[smhd])    adjustment="-$(timeToSeconds "${adjustment#-}" adjustment)" || return $?;;
-	*)		    printf >&2 'ERROR: Illegal adjustment: %s\n' "$adjustment"; exit 2;;
-    esac
-    time="$(timeToSeconds "$time" "$2")" || exit $?
-    printf '%s\t%s\n' "$time" "$adjustment"
-}
-adjust()
-{
-    local var="${1?}"; shift
-    local adjustment="$1"; shift
-    eval "local value=\$$var"
-    local newValue
-    case "$adjustment" in
-	'')	    return;;
-	[+-]0?(%))  return;;
-	++([0-9]))  newValue="$((value + ${adjustment#+}))";;
-	-+([0-9]))  newValue="$((value - ${adjustment#-}))";;
-	[+-]+([0-9])%)
-		    # As Bash doesn't support floating point math yet, multiply
-		    # with 100, add the percentage change, and divide back and
-		    # round.
-		    # To avoid that the rounding truncates small changes and
-		    # therefore never lets the real value change, store the cent
-		    # value in a global variable, and re-use that instead.
-		    eval "local centValue=\$${var}CentValue"
-		    [ "$centValue" ] || centValue=$((value * 100))
-
-		    local change=$((${adjustment:1:-1} * value))
-		    [ "${adjustment:0:1}" = '+' ] && let centValue+=$change || let centValue-=$change
-		    newValue=$(((centValue + 50) / 100))
-
-		    eval "${var}CentValue=\$centValue"
-		    ;;
-	*)	    printf >&2 'ASSERT: Invalid adjustment: %s\n' "$adjustment"; exit 3;;
-    esac
-
-    [ $newValue -le 0 ] && newValue=1
-    eval "$var=\$newValue"
-}
-
 
 prefix='Waiting'
 render='ephemereal'
@@ -131,7 +59,7 @@ do
 	--clear|-c)	shift; isClear=t;;
 	--clear-always|-C)
 			shift; isClear=t; trap 'clear 2>/dev/null' EXIT;;
-	--interval|-i)	shift; < <(timeWithAdjustmentToSeconds "$1") IFS=$'\t' read -r interval intervalAdjustment || exit 2; shift;;
+	--interval|-i)	shift; < <(durationWithAdjustmentToSeconds --no-adjustment -- "${1:?}") IFS=$'\t' read -r interval intervalAdjustment || exit 2; shift;;
 	--as)		shift; render="$1"; shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
@@ -142,8 +70,40 @@ if [ $# -ne 1 ]; then
     printUsage "$0" >&2
     exit 2
 fi
-delay="$(timeToSeconds "$1")" || exit $?
+delay=$(durationToSeconds -- "${1:?}") || { printf >&2 'ERROR: Illegal TIMESPAN: %s\n' "$1"; exit 2; }; shift
 
+typeset -a ADJUSTER=()
+adjustInto()
+{
+    local -n resultRef="${1:?}"; shift
+    local input="${1:?}"; shift
+
+    [ ${#ADJUSTER[@]} -gt 0 ] \
+	|| coproc ADJUSTER { durationWithAdjustmentToSeconds; } # Start a coproc to adjust individual timespans and manage expiration; this is much more efficient than starting a new process for each timespan.
+
+    printf '%s\n' "$input" >&"${ADJUSTER[1]}"
+    IFS=$'\n' read -r -u "${ADJUSTER[0]}" resultRef \
+    || { printf >&2 'ASSERT: Adjustment succeeds: %s\n' "$input"; exit 3; }
+    case ",${DEBUG:-}," in *,countdown:adjuster,*) printf >&2 '%scountdown (adjuster): %s -> %s\n' "$PS5" "$input" "$resultRef";; esac
+}
+adjustInterval()
+{
+    [ -n "$intervalAdjustment" ] || return 1
+    adjustInto interval "${interval}${intervalAdjustment}"
+    [ "$interval" != 0 ] || intervalAdjustment=''    # Optimization: Once the timespan has been reduced to zero, it's not gonna increase again, so we can stop adjusting.
+}
+timeRemaining=
+expiry()
+{
+    local action="${1:?}"; shift
+    local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
+    local result; adjustInto result "${action}${actionArgs}"
+    if [ "$action" = 'check' ]; then
+	[ "$result" = 'expired' ] || { timeRemaining="$result"; return 1; }
+    elif [ "$action" = 'calc' ]; then
+	[ "$result" = '1' ]
+    fi
+}
 
 updateDuration()
 {
@@ -180,21 +140,28 @@ case "$render" in
     *)		    printf >&2 'Invalid render: %s\n' "$render"; echo >&2; printUsage "$0" >&2; exit 2;;
 esac
 
-SECONDS=0
-while [ $SECONDS -lt $delay ]
+expiry set "$delay" "$delay" "$interval"
+while ! expiry check
 do
     case "$render" in
 	dot)	    printf '.';;
 	ephemereal) previousDuration="$duration"
-		    duration="$("${projectDir}/lib/secondsToDurationSimple.sh"  "$((delay - SECONDS))")"
+		    duration="$("${projectDir}/lib/secondsToDurationSimple.sh" ${timeRemaining:?})"
 		    updateDuration "$previousDuration" "$duration"
 		    ;;
 
     esac
 
-    sleep "$interval" || exit $?
-    adjust interval "$intervalAdjustment"
+    if expiry calc $timeRemaining '<' $interval; then
+	# Only wait for the remaining time, not the full interval.
+	currentInterval=$timeRemaining
+    else
+	currentInterval=$interval
+	adjustInterval && expiry set "$timeRemaining" "$timeRemaining" "$interval"
+    fi
+    sleep "$currentInterval" || exit $?
 done
+[ ${#ADJUSTER[@]} -eq 0 ] || exec {ADJUSTER[1]}>&- {ADJUSTER[0]}<&-; ADJUSTER=()
 
 if [ "$isClear" ]; then
     clear
