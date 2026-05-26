@@ -100,6 +100,8 @@ expiry()
     local result; adjustInto result "${action}${actionArgs}"
     if [ "$action" = 'check' ]; then
 	[ "$result" = 'expired' ] || { timeRemaining="$result"; return 1; }
+    elif [ "$action" = 'calc' ]; then
+	[ "$result" = '1' ]
     fi
 }
 
@@ -150,6 +152,10 @@ do
 
     esac
 
+    if expiry calc $timeRemaining '<' $interval; then
+	# Only wait for the remaining time, not the full interval.
+	interval=$timeRemaining
+    fi
     sleep "$interval" || exit $?
     adjustInterval
 done
