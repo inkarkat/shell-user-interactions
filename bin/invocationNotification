@@ -172,7 +172,7 @@ EXIT STATUS:
 
 Example:
 HELPTEXT
-    printf '%q %s\n' "$(basename "$1")" "-t overlay -m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
+    printf '%q %s\n' "$(basename "$1")" "-o overlay -m 'Google ping time: ' --inline-stderr -c 'ping -c 10 www.google.com 2>&1 | stdbuf -oL grep --line-buffered -o time=.* >&2'"
 }
 
 singleTargetCheck()
