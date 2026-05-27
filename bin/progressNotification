@@ -306,7 +306,7 @@ expiry()
     local action="${1:?}"; shift
     local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
     local result; adjustInto result "${action}${actionArgs}"
-    [ "$action" != 'check' ] || [ "$result" = 'expired' ]
+    [ "$action" != 'check' ] || [ "${result:0:1}" = - ]
 }
 
 isTerminalOk=t

@@ -99,7 +99,8 @@ expiry()
     local actionArgs; [ $# -eq 0 ] || printf -v actionArgs '\t%s' "$@"
     local result; adjustInto result "${action}${actionArgs}"
     if [ "$action" = 'check' ]; then
-	[ "$result" = 'expired' ] || { timeRemaining="$result"; return 1; }
+	timeRemaining=$result
+	[ ${timeRemaining:0:1} = - ]
     elif [ "$action" = 'calc' ]; then
 	[ "$result" = '1' ]
     fi
