@@ -83,8 +83,8 @@ adjustInto()
 
     printf '%s\n' "$input" >&"${ADJUSTER[1]}"
     IFS=$'\n' read -r -u "${ADJUSTER[0]}" resultRef \
-    || { printf >&2 'ASSERT: Adjustment succeeds: %s\n' "$input"; exit 3; }
-    case ",${DEBUG:-}," in *,countdown:adjuster,*) printf >&2 '%scountdown (adjuster): %s -> %s\n' "$PS5" "$input" "$resultRef";; esac
+	|| { printf >&2 'ASSERT: Adjustment succeeds: %s\n' "$input"; exit 3; }
+    ${DEBUG:+debuglogf --module adjuster '%s -> %s' "$input" "$resultRef"}
 }
 adjustInterval()
 {
