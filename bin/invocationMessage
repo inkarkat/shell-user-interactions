@@ -37,14 +37,6 @@ printUsage()
     printShortUsage "$1" >&2
     printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
 }
-plural()
-{
-    if [ "$1" = 1 ]; then
-	printf %s "${2}${4}"
-    else
-	printf %s "${2}${3:-s}"
-    fi
-}
 printLongUsage()
 {
     # This is the long "man page" when launched with the help argument.

@@ -10,7 +10,7 @@ With the offered reusable commands, these typical interactions can be dealt with
 
 * Bash, GNU `awk`, GNU `sed`
 * [inkarkat/miniDB](https://github.com/inkarkat/miniDB) for the `durationMessage` command
-* [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics) for the `invocationNotification` command
+* [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics)
 * [inkarkat/shell-filters](https://github.com/inkarkat/shell-filters)
 * [inkarkat/shell-debugging](https://github.com/inkarkat/shell-debugging) for debugging (optional)
 * [inkarkat/sed-extensions](https://github.com/inkarkat/sed-extensions) for automated tests
